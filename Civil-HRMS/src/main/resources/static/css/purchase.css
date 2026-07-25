@@ -1,0 +1,188 @@
+
+:root {
+	--primary: #4361ee;
+	--secondary: #3f37c9;
+	--bg: #f8f9fa;
+	--white: #ffffff;
+	--text: #2b2d42;
+	--border: #e0e0e0;
+}
+/* Reset and Base Styles */
+/* Reset and Base Styles */
+body {
+    background-color: var(--bg);
+    color: var(--text); /* Fixed this line */
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* Layout Container */
+.container {
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 20px; /* Gives padding so content doesn't hit screen edges */
+}
+
+/* Card Style */
+.card {
+	background: var(--white);
+	padding: 25px;
+	border-radius: 12px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+	margin-bottom: 30px;
+}
+
+.card-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 15px;
+	margin-bottom: 20px;
+}
+
+h2 {
+	margin-top: 0;
+	color: var(--primary);
+	font-weight: 600;
+}
+
+/* Form Grid */
+.purchase-form {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 20px;
+}
+
+.form-group {
+	display: flex;
+	flex-direction: column;
+}
+
+label {
+	font-size: 0.85rem;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: #666;
+}
+
+input, select {
+	padding: 10px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	font-size: 0.95rem;
+	transition: border-color 0.3s ease;
+	width: 100%;
+}
+
+input:focus {
+	outline: none;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+.btn-submit {
+	grid-column: 1/-1;
+	background: var(--primary);
+	color: white;
+	padding: 12px;
+	border: none;
+	border-radius: 6px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.3s;
+}
+
+.btn-submit:hover {
+	background: var(--secondary);
+}
+
+/* Responsive Table */
+.table-container {
+	overflow-x: auto;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 10px;
+}
+
+th {
+	background: #f1f3f5;
+	text-align: left;
+	padding: 12px;
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+td {
+	padding: 12px;
+	border-bottom: 1px solid var(--border);
+	font-size: 0.9rem;
+}
+
+tr:hover {
+	background-color: #fcfcfc;
+}
+
+.badge {
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	background: #e9ecef;
+}
+
+/* Fixed Download Button */
+.btn-download {
+	background-color: #27ae60;
+	color: white;
+	padding: 10px 15px;
+	border-radius: 4px;
+	font-weight: bold;
+	text-decoration: none;
+	transition: background 0.3s ease;
+	display: inline-block;
+}
+
+.btn-download:hover {
+	background-color: #219150;
+}
+
+/* GLOBAL RESPONSIVE STYLES */
+/* GLOBAL RESPONSIVE STYLES */
+@media (max-width: 768px) {
+    
+    .card {
+        padding: 15px;
+    }
+
+    .btn-download {
+        display: block;
+        text-align: center;
+        width: 100%;
+    }
+}
+
+/* Fixes for small phones */
+@media (max-width: 600px) {
+    .purchase-form {
+        grid-template-columns: 1fr; /* Forces form inputs into one straight column */
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start; /* Stacks header text and download button */
+    }
+    
+    table {
+        font-size: 0.8rem; /* Makes text smaller so table fits better */
+    }
+    
+    th, td {
+        padding: 8px; /* Saves space on tight screens */
+    }
+}

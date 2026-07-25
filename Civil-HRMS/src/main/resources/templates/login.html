@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" xmlns:th="http://www.thymeleaf.org">
+<link rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css"
+	integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+	crossorigin="anonymous">
+<script
+	src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js"
+	integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+	crossorigin="anonymous"></script>
+<title>Login</title>
+<link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+</head>
+<style>
+	/* Smooth background gradient */
+		body {
+			background: linear-gradient(135deg, #9A616D 0%, #4a2830 100%);
+			font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+		}
+
+		/* Modern card with glassmorphism feel */
+		.custom-login-card {
+			border: none !important;
+			border-radius: 1.25rem !important;
+			box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+			background: #ffffff;
+			overflow: hidden;
+			transition: transform 0.3s ease;
+		}
+
+		/* Logo section background styling */
+		.logo-section {
+			background-color: #fcf8f9;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 3rem 2rem;
+		}
+
+		.logo-wrapper img {
+			max-width: 280px;
+			height: auto;
+			filter: drop-shadow(0 4px 8px rgba(0,0,0,0.05));
+		}
+
+		/* Floating label and input styling */
+		.form-outline {
+			position: relative;
+			margin-bottom: 1.5rem;
+		}
+
+		.form-control-lg {
+			border: 2px solid #eee;
+			border-radius: 0.75rem;
+			padding: 0.75rem 1rem;
+			font-size: 1rem;
+			transition: all 0.2s ease;
+			background-color: #fafafa;
+		}
+
+		.form-control-lg:focus {
+			border-color: #9A616D;
+			background-color: #fff;
+			box-shadow: 0 0 0 4px rgba(154, 97, 109, 0.15);
+			outline: none;
+		}
+
+		.form-label {
+			font-weight: 500;
+			color: #666;
+			margin-bottom: 0.5rem;
+			display: block;
+			font-size: 0.9rem;
+		}
+
+		/* Premium button styling */
+		.btn-custom {
+			background-color: #9A616D !important;
+			border: none !important;
+			color: #fff !important;
+			padding: 0.8rem 1.5rem !important;
+			font-size: 1rem !important;
+			font-weight: 600 !important;
+			border-radius: 0.75rem !important;
+			transition: all 0.2s ease !important;
+			box-shadow: 0 4px 12px rgba(154, 97, 109, 0.3);
+		}
+
+		.btn-custom:hover {
+			background-color: #7b4954 !important;
+			transform: translateY(-1px);
+			box-shadow: 0 6px 15px rgba(154, 97, 109, 0.4);
+		}
+
+		.btn-custom:active {
+			transform: translateY(1px);
+		}
+
+		/* Clean alerts */
+		.msg {
+			padding: 1rem;
+			border-radius: 0.75rem;
+			font-weight: 500;
+			margin-bottom: 1.5rem;
+			border: none;
+		}
+
+		/* Responsive layout tweaks */
+		@media (max-width: 767.98px) {
+			.logo-section {
+				padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+				border-bottom: 1px solid #eee;
+			}
+			.logo-wrapper img {
+				max-width: 200px;
+			}
+			.card-body {
+				padding: 2rem 1.5rem !important;
+			}
+		}
+</style>
+<body>
+	<section class="vh-100" style="background-color: #9A616D;">
+		<div class="container py-5 h-100">
+			<div
+				class="row d-flex justify-content-center align-items-center h-100">
+				<div class="col col-xl-10">
+					<div class="card" style="border-radius: 1rem;">
+						<div class="row g-0">
+							 <div class="logo-wrapper">
+            <img th:src="@{/images/civil_deck_logo.png}" alt="App Logo" width="350"/>
+        </div>
+							<div class="col-md-6 col-lg-7 d-flex align-items-center">
+								<div class="card-body p-4 p-lg-5 text-black">
+
+									<div th:if="${param.logout}" class="msg success">You have
+										been logged out.</div>
+
+									<!-- This shows on wrong credentials -->
+									<div th:if="${param.error}" class="msg error">Invalid
+										Email or Password.</div>
+
+									<form th:action="@{/login}" method="post">
+
+										<div class="d-flex align-items-center mb-3 pb-1">
+											<i class="fas fa-cubes fa-2x me-3" style="color: #ff6219;"></i>
+											<span class="h1 fw-bold mb-0">Civil Deck Infraprojects Pvt Ltd</span>
+										</div>
+
+										<h5 class="fw-normal mb-3 pb-3" style="letter-spacing: 1px;">Sign
+											into your account</h5>
+
+										<div data-mdb-input-init class="form-outline mb-4">
+											<input type="email" name="username"
+												class="form-control form-control-lg" required /> <label
+												class="form-label" for="form2Example17">Email
+												address</label>
+										</div>
+
+										<div data-mdb-input-init class="form-outline mb-4">
+											<input type="password" name="password"
+												class="form-control form-control-lg" required /> <label
+												class="form-label" for="form2Example27">Password</label>
+										</div>
+
+										<div class="pt-1 mb-4">
+											<button data-mdb-button-init data-mdb-ripple-init
+												class="btn btn-dark btn-lg btn-block" type="submit">Login</button>
+										</div>
+
+										<!-- <a class="small text-muted" href="#!">Forgot password?</a>
+										<p class="mb-5 pb-lg-2" style="color: #393f81;">
+											Don't have an account? <a th:href="@{/registrations}"
+												style="color: #393f81;">Register here</a>
+										</p> -->
+									</form>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</body>
+</html>

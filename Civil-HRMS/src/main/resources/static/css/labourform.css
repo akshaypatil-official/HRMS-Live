@@ -1,0 +1,301 @@
+:root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --bg-body: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-input: #f8fafc;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+    --radius: 10px;
+}
+
+/* Base Reset Styles */
+body {
+    background-color: var(--bg);
+    color: var(--text-main);
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+     width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+
+/* Two-Column Layout Grid (Desktop) */
+.main-content {
+    max-width: 1200px;
+    margin: 30px auto;
+    display: grid;
+    grid-template-columns: 380px 1fr; /* Form stays narrow, table grows wide */
+    gap: 30px;
+    align-items: start;
+}
+
+/* 1. Main Card Wrapper - Maintained with your design metrics */
+.card {
+    background: var(--white, #ffffff);
+    padding: 12px;                  
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    transition: box-shadow 0.3s ease;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;               
+}
+
+.card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+/* 2. Section Heading Elements */
+h2 {
+    font-size: 1.1rem;              
+    font-weight: 700;
+    margin-bottom: 16px;            
+    color: var(--text-main);
+    border-left: 4px solid var(--primary);
+    padding-left: 8px;
+}
+
+/* 3. The Layout Protection Wrapper Container */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;               /* Captures the expanded wide layout with a clean scrollbar */
+    box-sizing: border-box;
+    border-radius: var(--radius);
+    border: 1px solid var(--border); /* Adds structure to wide layout display limits */
+}
+
+/* 4. Compressed Table Structural Controls */
+#myTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    font-size: 0.95rem;             
+    
+    /* CORRECTION: Forces the table grid layout width to scale up cleanly */
+    min-width: 1400px;              /* Increase this number if columns still look squeezed */
+    table-layout: auto;             /* Allows columns to distribute size based on data text length */
+}
+
+/* 5. Sticky Column Header Properties */
+#myTable thead th {
+    position: sticky;
+    top: 0;
+    background: var(--white, #ffffff);
+    z-index: 5;
+    border-bottom: 2px solid var(--border);
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* 6. Compressed Inner Cell Spacing Rules */
+#myTable th, 
+#myTable td {
+    padding: 8px 12px;               /* Slightly increased for better legibility in expanded width */
+    line-height: 1.2;               
+    text-align: left;
+    box-sizing: border-box;
+    white-space: nowrap;            /* Prevents single text names from auto-wrapping onto multiple lines */
+}
+
+/* Keep numerical worker counts extra neat and narrow */
+#myTable th:nth-child(n+7):nth-child(-n+11),
+#myTable td:nth-child(n+7):nth-child(-n+11) {
+    text-align: center;
+    width: 60px;                    
+}
+
+/* Clean row highlights */
+#myTable tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Form Styles */
+.input-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+    background-color: var(--bg-input);
+}
+
+input:focus, select:focus {
+    border-color: var(--primary);
+    outline: none;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Action Form Button */
+button[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 10px;
+    transition: all 0.2s ease;
+}
+
+button[type="submit"]:hover {
+    background: var(--primary-hover);
+}
+
+/* Quantity Pill Custom Badge */
+.qty-badge {
+    background: #eff6ff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE CODE
+   ========================================================================== */
+
+/* Tablet & Smaller Layouts */
+@media (max-width: 992px) {
+    .main-content {
+        grid-template-columns: 1fr; /* Stacks form above the history card */
+        gap: 20px;
+    }
+    
+    .card {
+        padding: 20px;
+    }
+}
+
+/* Mobile Screens (Transforms Table to Card Blocks) */
+@media (max-width: 600px) {
+    body {
+        
+    }
+
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+
+    /* Completely hide column row labels */
+    thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    /* Format each table body row into a small nested card */
+    tbody tr {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 15px;
+        padding: 12px;
+        background-color: #ffffff;
+    }
+
+    /* Hide the default empty state table borders if table is clear */
+    tbody tr:has(td[colspan]) {
+        border: none;
+        padding: 0;
+    }
+
+    td {
+        border-bottom: 1px solid #f1f5f9;
+        position: relative;
+        padding-left: 45%;
+        text-align: right;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    td:last-child {
+        border-bottom: none;
+    }
+
+    /* Generate and inject small responsive headers */
+    td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 12px;
+        width: 40%;
+        text-align: left;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+    }
+    
+    /* Overrides for dynamic text aligned label blocks */
+    td[colspan] {
+        text-align: center !important;
+        padding: 30px 10px !important;
+    }
+    
+    td[colspan]::before {
+        display: none;
+    }
+}
+/* Update your modal container configuration class */
+.photo-modal {
+    position: fixed;            /* Ensures it stays locked over the viewport window screen */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Adds a dark translucent backdrop shading block */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* 1. CORRECTION: Must be higher than the table's sticky header index (which is 5 or 10) */
+    z-index: 9999;             
+}
+
+/* Update your modal content white card box container */
+.photo-modal-content {
+    background-color: var(--white, #ffffff); /* 2. CORRECTION: Must have a solid background color */
+    padding: 20px;
+    border-radius: var(--radius, 8px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    max-width: 90%;
+    max-height: 90%;
+    position: relative;
+    
+    /* 3. CORRECTION: Keeps content elements safely stacked on top of the modal backdrop layer */
+    z-index: 10000;            
+}
+
+.close{
+font-size:0px;
+cursor:pointer;
+float:right;
+}

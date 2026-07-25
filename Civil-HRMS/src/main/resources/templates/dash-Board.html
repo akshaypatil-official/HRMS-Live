@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://thymeleaf.org"
+				xmlns:sec="http://thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/Header-Footer.css}">
+     <link rel="stylesheet" th:href="@{/css/dashBoard.css}">
+   
+   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+</head>
+<body>
+<header class="navbar"> 
+    <div class="logo">CIVIL DECK INFRAPROJECTS PVT LTD</div> 
+    <nav> 
+        <ul class="nav-links"> 
+            <!-- Dropdown for Timesheet Options -->
+           <li class="dropdown">
+    <a href="javascript:void(0)" class="dropbtn">Timesheet Menu</a>
+    <div class="dropdown-content">
+        <a th:href="@{/timesheets}">Timesheet</a>
+        
+        <!-- Corrected: Removed invalid nested li tag -->
+        <a th:href="@{/dashBoard}" 
+           sec:authorize="hasAnyAuthority('admin', 'manager', 'accountant')">Dashboard</a>
+    </div>
+</li>
+            <li><a th:href="@{/profile}">My Profile</a></li> 
+            <li sec:authorize="hasAnyAuthority('admin', 'manager')"> 
+                <a th:href="@{/employees}">Employee List</a> 
+            </li> 
+            <li><a th:href="@{/purchases}">Purchase</a></li> 
+            <li><a th:href="@{/labourRecords}">Labour Entries</a></li> 
+            <li><a th:href="@{/logout}">Logout</a></li> 
+        </ul> 
+    </nav> 
+</header>
+<div class="dashboard-container">
+  
+     <!-- Dashboard Header -->
+<div class="mb-3">
+    <h1 style="font-size: 1.5rem; font-weight: 700; color: #212529; margin-bottom: 0.25rem;">My Dashboard</h1>
+</div>
+
+<!-- Flexbox Container: Forces 3 cards into a single top line -->
+<div style="display: flex; gap: 12px; width: 100%; margin-bottom: 24px; flex-wrap: nowrap;">
+    
+    <!-- Card 1 -->
+    <div class="stat-card" style="flex: 1; min-width: 0; padding: 12px 16px; margin-bottom: 0; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+    <p class="stat-title" style="font-size: 0.75rem; margin-bottom: 4px; color: #6c757d; text-transform: uppercase; font-weight: 600;">Total Employees</p>
+    <!-- Thymeleaf binds the controller value here. The number 24 remains as a preview fallback. -->
+    <h3 class="stat-value" th:text="${totalEmployees}" style="font-size: 1.35rem; font-weight: 700; color: #212529; margin: 0;">24</h3>
+</div>
+
+    <!-- Card 2 -->
+    <div class="stat-card" style="flex: 1; min-width: 0; padding: 12px 16px; margin-bottom: 0; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+        <p class="stat-title" style="font-size: 0.75rem; margin-bottom: 4px; color: #6c757d; text-transform: uppercase; font-weight: 600;">Active Now</p>
+        <h3 class="stat-value"  th:text="${#lists.size(activities)}" style="font-size: 1.35rem; font-weight: 700; color: #198754; margin: 0;">18</h3>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="stat-card" style="flex: 1; min-width: 0; padding: 12px 16px; margin-bottom: 0; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #dee2e6;">
+        <p class="stat-title" style="font-size: 0.75rem; margin-bottom: 4px; color: #6c757d; text-transform: uppercase; font-weight: 600;">Pending Approvals</p>
+        <h3 class="stat-value"  th:text="${pendingApprovals}" style="font-size: 1.35rem; font-weight: 700; color: #ffc107; margin: 0;">5</h3>
+    </div>
+
+</div>
+        
+        <!-- Data Table / Card Container -->
+        <div class="data-card">
+            <div class="data-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #dee2e6; background-color: #ffffff; flex-wrap: wrap; gap: 10px;">
+    <!-- Left: Title -->
+    <h2 style="font-size: 1.1rem; font-weight: 600; color: #495057; margin-bottom: 0;">Recent Activities (Today's Timesheet)</h2>
+    
+    <!-- Right: Date Search Input -->
+  <form th:action="@{/dashBoard}" method="get" class="d-inline">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="dateSearch">Search Date:</label>
+        
+        <!-- The th:value correctly reads the currentSearchDate sent by the controller -->
+        <input type="date" 
+               id="dateSearch" 
+               name="dateSearch" 
+               th:value="${currentSearchDate}" 
+               onchange="this.form.submit();" />
+    </div>
+</form>
+</div>
+            <!-- 1. Desktop View: Detailed Table -->
+           <div class="desktop-view" style="overflow-x: auto;">
+    <table class="custom-table display" id="myTable">
+        <thead>
+            <tr>
+                <th>Employee Name</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>In Photo</th>
+                <th>Out Photo</th>    
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="activity : ${activities}">
+                <!-- Employee Name -->
+                <td style="font-weight: 500;"
+                    th:text="${activity.user != null ? activity.user.firstName + ' ' + activity.user.lastName : 'N/A'}">
+                    John Doe
+                </td>
+                
+                <!-- Date -->
+                <td style="white-space: nowrap;"
+                    th:text="${#temporals.format(activity.date, 'yyyy-MM-dd')}">
+                    2026-07-07
+                </td>
+                
+                <!-- Time (In - Out) -->
+                <td style="white-space: nowrap;"
+                    th:text="|${activity.timeIn} - ${activity.timeOut}|">
+                    09:00 AM - 06:00 PM
+                </td>
+                
+                <!-- Location -->
+                <td th:text="${activity.location}">
+                    Mumbai Office
+                </td>
+                
+                <!-- Status -->
+                <td> 
+    <span th:text="${activity.status}" 
+          th:style="'padding: 0.25rem 0.5rem; border-radius: 50px; font-size: 0.75rem; font-weight: 500; ' + 
+                    (${activity.status == 'Absent'} ? 'background-color: #ffebee; color: #c62828;' : 'background-color: #e8f5e9; color: #1b5e20;')"> 
+        Active 
+    </span> 
+</td>
+
+                
+                <!-- In Photo -->
+                <td>
+                    <img th:src="@{${activity.photo}}" style="display: none;" /> 
+                    <button type="button" class="btn-view-photo"
+                            th:data-photo-url="@{${activity.photo}}"
+                            onclick="openPhotoModal(this)">
+                        View Photo
+                    </button>
+                </td>
+                
+                <!-- Out Photo -->
+                <td>
+                    <img th:src="@{${activity.outPhoto}}" style="display: none;" /> 
+                    <button type="button" class="btn-view-photo"
+                            th:data-photo-url="@{${activity.outPhoto}}"
+                            onclick="openPhotoModal(this)">
+                        View Photo
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+           <!-- 2. Mobile View: Responsive Cards -->
+             <div class="mobile-view">
+                <div th:each="activity : ${activities}" class="mobile-row">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <span style="font-weight: 700; color: #212529;" th:text="${activity.user != null ? activity.user.firstName + ' ' + activity.user.lastName : 'N/A'}">John Doe</span>
+                        <span th:text="${activity.status}" style="padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.75rem; background-color: #e8f5e9; color: #1b5e20;">Active</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.75rem; color: #6c757d; margin-bottom: 0.75rem;">
+                        <div><strong>Date:</strong> <span th:text="${#temporals.format(activity.date, 'yyyy-MM-dd')}">2026-07-07</span></div>
+                        <div><strong>Time:</strong> <span th:text="|${activity.timeIn} - ${activity.timeOut}|">09:00 AM - 06:00 PM</span></div>
+                        <div style="grid-column: span 2;"><strong>Location:</strong> <span th:text="${activity.location}">Mumbai Office</span></div>
+                    </div>
+
+                    
+    <!-- In Photo Section -->
+   <div style="display: flex; align-items: center; gap: 0.5rem;">
+    <span style="font-size: 0.75rem; color: #6c757d;">In:</span>
+    <button type="button" 
+            class="btn-view-photo" 
+            th:data-photo-url="${activity.photo}" 
+            onclick="openPhotoModal(this)"
+            style="background: none; border: none; padding: 0; cursor: pointer;">
+        <img th:src="${activity.photo != null ? activity.photo : 'https://placeholder.com'}" alt="In" class="avatar" style="width: 32px; height: 32px; display: block;" />
+    </button>
+</div>
+
+<!-- Out Photo Section -->
+<div style="display: flex; align-items: center; gap: 0.5rem;">
+    <span style="font-size: 0.75rem; color: #6c757d;">Out:</span>
+    <button type="button" 
+            class="btn-view-photo" 
+            th:data-photo-url="${activity.outPhoto}" 
+            onclick="openPhotoModal(this)"
+            style="background: none; border: none; padding: 0; cursor: pointer;">
+        <img th:src="${activity.outPhoto != null ? activity.outPhoto : 'https://placeholder.com'}" alt="Out" class="avatar" style="width: 32px; height: 32px; display: block;" />
+    </button>
+</div>
+
+                </div>
+            </div> 
+        </div>
+</div>
+<div id="customPhotoModal" class="custom-modal">
+    <div class="custom-modal-content">
+        <span class="custom-modal-close" onclick="closePhotoModal()">&times;</span>
+        <img id="modalTargetImage" src="" alt="Employee Attendance Preview" />
+    </div>
+</div>
+<!-- Bootstrap 5 JavaScript Link -->
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+</body>
+<script>
+    // 1. Explicitly attach to window so inline HTML onclick can always see it
+    window.openPhotoModal = function(buttonElement) {
+        const photoUrl = buttonElement.getAttribute('data-photo-url');
+        const modalImage = document.getElementById('modalTargetImage');
+        const modalContainer = document.getElementById('customPhotoModal');
+        
+        if (photoUrl) {
+            modalImage.src = photoUrl;
+            modalContainer.style.display = "block";
+        }
+    };
+
+    // 2. Explicitly attach close function to window
+    window.closePhotoModal = function() {
+        const modalContainer = document.getElementById('customPhotoModal');
+        if (modalContainer) {
+            modalContainer.style.display = "none";
+        }
+    };
+
+    // 3. Handle closing when clicking outside the image box
+    window.addEventListener('click', function(event) {
+        const modalContainer = document.getElementById('customPhotoModal');
+        if (modalContainer && modalContainer.style.display === "block") {
+            if (event.target === modalContainer) {
+                window.closePhotoModal();
+            }
+        }
+    });
+</script>
+<script type="text/javascript">
+
+$(document).ready(function () {
+
+    $('#myTable').DataTable({
+        pageLength: 15,
+        lengthMenu: [5, 10, 25, 50, 100],
+        searching: false,
+        ordering: true,
+        paging: true,
+        responsive: true,
+
+        dom: 'Bfrtip',
+
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: 'Download Excel',
+                title: 'Employee Report',
+                className: 'btn btn-success',
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4]
+                }
+            }
+        ],
+        columnDefs: [
+            {
+                targets: 5,
+                orderable: false
+            }
+        ]
+    });
+
+});
+</script>
+</html>

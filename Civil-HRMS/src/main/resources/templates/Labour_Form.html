@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://thymeleaf.org"
+				xmlns:sec="http://thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Labour Report | Dashboard</title>
+    <!-- Importing Inter font for a modern look -->
+    <link rel="stylesheet" th:href="@{/css/Header-Footer.css}">
+    <link rel="stylesheet" th:href="@{/css/labourform.css}">
+    <link href="https://googleapis.com" rel="stylesheet">
+    
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/> 
+</head>
+<body>
+
+<header class="navbar">
+		<div class="logo">CIVIL DECK INFRAPROJECTS PVT LTD</div>
+		<nav>
+			<ul class="nav-links">
+				<li class="dropdown">
+    <a href="javascript:void(0)" class="dropbtn">Timesheet Menu</a>
+    <div class="dropdown-content">
+        <a th:href="@{/timesheets}">Timesheet</a>
+        
+        <!-- Corrected: Removed invalid nested li tag -->
+        <a th:href="@{/dashBoard}" 
+           sec:authorize="hasAnyAuthority('admin', 'manager', 'accountant')">Dashboard</a>
+    </div>
+</li>
+				<li><a th:href="@{/profile}">My Profile</a></li>
+				<li sec:authorize="hasAnyAuthority('admin', 'manager')">
+                  <a th:href="@{/employees}">Employee List</a>
+                </li>
+				<li><a th:href="@{/purchases}">Purchase</a></li>
+				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/logout}">Logout</a></li>
+			</ul>
+		</nav>
+	</header>
+
+
+<div class="main-content">
+    <!-- Left Side: Form Section -->
+    <section class="card">
+        <h2>Daily Entry</h2>
+        <form th:action="@{/labourRecords/saveLabour}" th:object="${labour}" method="post" enctype="multipart/form-data">
+            <div class="input-group">
+                <label>Date</label>
+                <input type="date" th:field="*{date}" required />
+            </div>
+            
+            <div class="input-group">
+                <label>Project Name</label>
+                <select th:field="*{project_name}" required>
+                    <option value="" disabled selected>Select Project</option>
+                    <option value="Well">Well</option>
+                    <option value="47 Smart City">47 Smart City</option>
+                    <option value="84-Amrut">84-Amrut</option>
+                    <option value="Kharegao Stem">Kharegao Stem</option>
+                    <option value="School">School</option>
+                    <option value="Bhivandi ZP">Bhivandi ZP</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>Site Name</label>
+                <input type="text" th:field="*{site_name}" placeholder="e.g. Block A" required>
+            </div>
+            
+
+				<div class="input-group">
+        <label>Upload Photo</label>
+        <input type="file"
+               name="photoFile"
+               accept="image/*"
+               required>
+    </div>
+<div class="form-card">
+    <h2>Daily Labor Entry</h2>
+    <label for="labor-matrix">Select Active Labor Types:</label>
+    <select id="labor-matrix" multiple onchange="syncLaborFields()">
+        <option value="mistri">Mistri (Mason)</option>
+        <option value="fitter">Fitter</option>
+        <option value="carpenter">Carpenter</option>
+        <option value="male_Coolie">Male Coolie (Labour)</option>
+        <option value="female_Coolie">Female Coolie</option>
+    </select>
+
+    <div class="dynamic-container">
+        <!-- Mistri Field Card -->
+        <div id="card-mistri" class="labor-input-card">
+            <label for="num-mistri">Target: 👷‍♂️ Number of Mistri:</label>
+            <input type="number" id="num-mistri" th:field="*{numMistri}" min="0">
+        </div>
+
+        <!-- Fitter Field Card -->
+        <div id="card-fitter" class="labor-input-card">
+            <label for="num-fitter">🔧 Number of Fitters:</label>
+            <input type="number" id="num-fitter" th:field="*{numFitter}" min="0">
+        </div>
+
+        <!-- Carpenter Field Card -->
+        <div id="card-carpenter" class="labor-input-card">
+            <label for="num-carpenter">🪚 Number of Carpenters:</label>
+            <input type="number" id="num-carpenter" th:field="*{numCarpenter}" min="0">
+        </div>
+
+        <!-- Male Coolie Field Card -->
+        <div id="card-male_coolie" class="labor-input-card">
+            <label for="num-male_coolie">💪 Number of Male Coolie:</label>
+            <input type="number" id="num-male_coolie" th:field="*{numMaleCoolie}" min="0">
+        </div>
+
+        <!-- Female Coolie Field Card -->
+        <div id="card-female_coolie" class="labor-input-card">
+            <label for="num-female_coolie">👩 Number of Female Coolie:</label>
+            <input type="number" id="num-female_coolie" th:field="*{numFemaleCoolie}" min="0">
+        </div>
+    </div>
+</div>
+<div class="input-group">
+                <label>Remark</label>
+                <input type="text" th:field="*{remark}" placeholder="fullDay / halfDay" required>
+            </div>
+
+				<button type="submit">Submit Entry</button>
+        </form>
+    </section>
+
+    <!-- Right Side: History Section -->
+    <section class="card">
+        <h2>History</h2>
+        <div class="table-wrapper">
+            <table id="myTable" class="display">
+                <thead>
+<tr>
+<th>Employee</th>
+    <th>Date</th>  
+    <th>Project</th>
+    <th>Site</th>
+    <th>Remark</th>
+    <th>Labour Photo</th>
+    <th>Mistri</th>
+    <th>Fitter</th>
+    <th>Carpenter</th>
+    <th>Male Coolie</th>
+    <th>Female Coolie</th>
+    <th>Action</th>
+</tr>
+</thead>
+                <tbody>
+                    <!-- Thymeleaf iteration -->
+                    <tr th:each="item : ${allLabours}">
+                    <td style="font-weight: 600;" 
+    th:text="${item.user != null ? (item.user.firstName + ' ' + item.user.lastName) : 'Unknown'}">
+    John Doe
+</td>
+
+                        <td th:text="${item.date}">2023-10-01</td>                      
+                        <td th:text="${item.project_name}">Project Name</td>
+                        <td th:text="${item.site_name}">Site A</td>
+                         <td th:text="${item.remark}">Remark</td>
+                    <td>
+    <button type="button"
+            th:data-photo-url="${item.photo}"
+            onclick="openPhotoModal(this)">
+        View Photo
+    </button>
+</td>
+<td th:text="${item.numMistri}"></td>
+<td th:text="${item.numFitter}"></td>
+<td th:text="${item.numCarpenter}"></td>
+<td th:text="${item.numMaleCoolie}"></td>
+<td th:text="${item.numFemaleCoolie}"></td>
+<td>
+    <!-- Inline style makes the button red directly inside your HTML -->
+    <button class="btn-delete" 
+            style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" 
+            th:onclick="'deleteRecord(' + ${item.id} + ')'">
+        Delete
+    </button>
+</td>
+                    </tr>
+                    <!-- Empty State -->
+                    <tr th:if="${#lists.isEmpty(allLabours)}">
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                            No records available yet.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="photoModal" class="photo-modal" style="display:none;">
+    <div class="photo-modal-content">
+
+        <span class="close-btn" onclick="closePhotoModal()">&times;</span>
+
+        <img id="modalTargetImg"
+             src=""
+             alt="Labour Photo"
+             style="max-width:100%; max-height:500px;">
+
+        <br><br>
+
+        <a id="modalDownloadBtn" href="" download>
+            <button type="button">Download</button>
+        </a>
+
+    </div>
+</div>
+        </div>
+    </section>
+</div>
+
+</body>
+<script type="text/javascript">
+
+$(document).ready(function () {
+
+    $('#myTable').DataTable({
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
+        searching: true,
+        ordering: true,
+        paging: true,
+        responsive: true,
+
+        dom: 'Bfrtip',
+
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: 'Download Excel',
+                title: 'Labour Report',
+                	
+                exportOptions: {
+                	columns: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10] 
+                }
+            }
+        ],
+
+        columnDefs: [
+            {
+            	targets: [5], 
+                orderable: false
+            }
+        ]
+    });
+
+});
+function openPhotoModal(button) {
+    const url = button.dataset.photoUrl;
+
+    document.getElementById("modalTargetImg").src = url;
+    document.getElementById("modalDownloadBtn").href = url;
+    document.getElementById("photoModal").style.display = "flex";
+}
+
+function closePhotoModal() {
+    document.getElementById("photoModal").style.display = "none";
+}
+</script>
+<script>
+function syncLaborFields() {
+    // Collect all configuration option values
+    const options = document.getElementById("labor-matrix").options;
+    
+    for (let i = 0; i < options.length; i++) {
+        // Convert camelCase values (like male_Coolie) to lowercase to match snake_case HTML IDs (like card-male_coolie)
+        const value = options[i].value.toLowerCase();
+        const targetCard = document.getElementById("card-" + value);
+        
+        if (targetCard) {
+            // If the option item is actively highlighted/selected, display its card row
+            if (options[i].selected) {
+                targetCard.style.display = "block";
+            } else {
+                targetCard.style.display = "none";
+            }
+        }
+    }
+}
+</script>
+<script>
+        function deleteRecord(id) {
+            // Confirmation dialog before deleting
+            if (!confirm("Are you sure you want to delete record")) {
+                return;
+            }
+            const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+            const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
+
+            // AJAX call to your @DeleteMapping endpoint
+            fetch('/labourRecords/' + id, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Success: Remove row from HTML DOM and show message
+                    document.getElementById('row-' + id).remove();
+                    showMessage("Record " + id + " deleted successfully.", "green");
+                } else if (response.status === 404) {
+                    // Handled 404 error from your controller condition
+                    showMessage("Delete failed: Record not found in database.", "red");
+                } else {
+                    // Any other server errors
+                    showMessage("Server error occurred.", "red");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage("Network error. Could not connect to server.", "red");
+            });
+        }
+
+        function showMessage(text, color) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerText = text;
+            msgDiv.style.color = color;
+        }
+    </script>
+
+</html>

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org"
+	xmlns:sec="http://thymeleaf.org/extras/spring-security">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timesheet Management</title>
+<link href="https://googleapis.com" rel="stylesheet">
+<link rel="stylesheet" th:href="@{/css/timesheet.css}">
+<link rel="stylesheet" th:href="@{/css/Header-Footer.css}">
+<script th:src="@{/js/timesheet.js}"></script>
+<script src="https://googleapis.com"></script>
+</head>
+<body>
+	<header class="navbar">
+		<div class="logo">CIVIL DECK INFRAPROJECTS PVT LTD</div>
+		<nav>
+			<ul class="nav-links">
+				 <li class="dropdown">
+    <a href="javascript:void(0)" class="dropbtn">Timesheet Menu</a>
+    <div class="dropdown-content">
+        <a th:href="@{/timesheets}">Timesheet</a>
+        
+        <!-- Corrected: Removed invalid nested li tag -->
+        <a th:href="@{/dashBoard}" 
+           sec:authorize="hasAnyAuthority('admin', 'manager', 'accountant')">Dashboard</a>
+    </div>
+</li>
+				<li><a th:href="@{/profile}">My Profile</a></li>
+				<li sec:authorize="hasAnyAuthority('admin', 'manager')">
+					<a th:href="@{/employees}">Employee List</a>
+				</li>
+				<li><a th:href="@{/purchases}">Purchase</a></li>
+				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/logout}">Logout</a></li>
+			</ul>
+		</nav>
+	</header>
+
+	<div class="main-container">
+		<!-- LEFT: FORM -->
+		<aside class="form-section">
+			<h3>Time Entry</h3>
+			<form th:action="@{/timesheets/save}" th:object="${timesheet}"
+				method="post">
+				<label class="form-label">Date</label>
+				<!-- Your HTML Element -->
+				<input type="date" id="todayDate" th:field="*{date}"
+					class="form-control" onchange="logSelectedDate()" /> <label
+					class="form-label">Status</label> <select id="statusSelect"
+					class="form-control" th:field="*{status}"
+					onchange="handleStatusChange()" required>
+					<option value="Present">Present</option>
+					<option value="HalfDay">Half Day</option>
+					<option value="DayNight">Night</option>
+					<option value="Absent">Absent</option>
+					<option value="Holiday">Holiday</option>
+					<option value="Sunday">Sunday</option>
+				</select> <input type="hidden" id="nightStatusInput"
+					th:field="*{nightStatus}">
+
+				<!-- Morning / Day Shift Section (Added id="morningTimeGroup") -->
+				<div id="morningTimeGroup" class="time-btn-group">
+					<div class="time-col">
+						<label class="form-label">In</label> <input type="time"
+							id="timeIn" th:field="*{timeIn}" class="form-control" readonly>
+						<button type="button" id="timeInBtn" class="btn-check btn-checkin"
+							onclick="setCurrentTime('timeIn')">In</button>
+					</div>
+					<div class="time-col">
+						<label class="form-label">Out</label> <input type="time"
+							id="timeOut" th:field="*{timeOut}" class="form-control" readonly>
+						<button type="button" id="timeOutBtn"
+							class="btn-check btn-checkout"
+							onclick="setCurrentTime('timeOut')">Out</button>
+					</div>
+				</div>
+
+				<!-- Night Shift Section -->
+				<div id="nightTimeGroup" class="time-btn-group"
+					style="margin-top: 15px; display: none;">
+					<div class="time-col">
+						<label class="form-label">Night In</label> <input type="time"
+							id="nightTimeIn" th:field="*{nightTimeIn}" class="form-control"
+							readonly>
+						<button type="button" id="btnNightIn"
+							class="btn-check btn-checkin"
+							onclick="setCurrentTime('nightTimeIn')">Night In</button>
+					</div>
+					<div class="time-col">
+						<label class="form-label">Night Out</label> <input type="time"
+							id="nightTimeOut" th:field="*{nightTimeOut}" class="form-control"
+							readonly>
+						<button type="button" id="btnNightOut"
+							class="btn-check btn-checkout"
+							onclick="setCurrentTime('nightTimeOut')">Night Out</button>
+					</div>
+				</div>
+
+				<label class="form-label">Site Name</label>
+				<div style="display: flex; gap: 5px;">
+					<input type="text" id="userLocation" th:field="*{location}"
+						class="form-control">
+					<button type="button" class="btn-check"
+						style="background: #6366f1; width: auto; padding: 0 10px; margin-bottom: 16px;">📍</button>
+				</div>
+
+				<label class="form-label"
+					style="font-weight: bold; font-size: 1.1rem;">Photo
+					Verification & Geotagging</label>
+
+				<div
+					style="margin-bottom: 16px; text-align: center; max-width: 500px; margin-left: auto; margin-right: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #f9f9f9;">
+
+					<!-- Geolocation Status Displays -->
+					<div
+						style="margin-bottom: 12px; text-align: left; font-size: 0.9rem;">
+						<button type="button" class="geo-btn"
+							style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 8px;">
+							📍 Step 1: Fetch Current Location</button>
+						<div id="showDetails"
+							style="color: #555; font-style: italic; margin-bottom: 4px; word-break: break-all;">Coordinates:
+							Not fetched yet.</div>
+						<div class="formattedAddress"
+							style="color: #059669; font-weight: bold; word-break: break-all;">Address:
+							Location not available</div>
+					</div>
+
+					<!-- Live Camera Feed Container -->
+					<div style="margin-bottom: 10px; font-weight: 600; color: #333;">Live
+						Camera Feed</div>
+					<video id="webcam" autoplay playsinline
+						style="width: 100%; max-height: 250px; background: #000; border-radius: 6px; transform: scaleX(1);"></video>
+
+					<!-- Camera Actions -->
+					<div
+						style="display: flex; gap: 10px; margin-top: 10px; margin-bottom: 15px;">
+						<button type="button" id="startCameraBtn" disabled
+							style="background: #10b981; color: white; border: none; padding: 10px; flex: 1; border-radius: 4px; font-weight: bold; opacity: 0.5; cursor: not-allowed;"
+							onclick="startCamera()">📷 Start Camera</button>
+						<button type="button"
+							style="background: #ef4444; color: white; border: none; padding: 10px; flex: 1; border-radius: 4px; font-weight: bold; cursor: pointer;"
+							onclick="capturePhoto()">🎯 Capture & Geotag</button>
+					</div>
+
+					<!-- Real-time Captured Photo Preview -->
+					<div style="margin-top: 10px;">
+						<canvas id="photoCanvas" style="display: none;"></canvas>
+						<img id="photoPreview" src="" alt="Captured Preview"
+							style="display: none; width: 100%; border-radius: 6px; border: 2px dashed #059669; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+					</div>
+				</div>
+
+				<!-- Hidden input to store Base64 Image Data for Thymeleaf -->
+				<input type="hidden" id="photoData" th:field="*{photo}"> <input
+					type="hidden" id="outPhotoData" th:field="*{outPhoto}" />
+
+				<button type="submit" class="btn-submit">Submit Attendance</button>
+			</form>
+		</aside>
+
+		<!-- RIGHT: TABLE -->
+		<main class="table-section">
+			
+    <h1 class="history-title">History Logs</h1>
+
+    <div class="history-actions">
+
+        <!-- Search -->
+        <form id="searchForm" action="javascript:void(0);" class="search-form" sec:authorize="hasAnyAuthority('admin', 'accountant', 'manager')">
+            <input type="text"
+                   id="searchInput"
+                   class="form-control"
+                   placeholder="Enter employee name...">
+
+            <button type="submit" class="btn btn-primary">
+                Search Employee
+            </button>
+        </form>
+
+ <!-- Summary -->
+        <div class="summary-form" sec:authorize="hasAnyAuthority('admin', 'accountant')">
+    <input type="month"
+           id="monthPicker"
+           required
+           class="month-input">
+
+    <button type="button"
+            class="btn btn-success"
+            id="exportBtn"
+            onclick="downloadExcel()">
+        📊 Download Summary
+    </button>
+    <div id="statusMessage" class="status-message"></div>
+</div>
+
+        <!-- Attendance Excel -->
+        <form th:action="@{/timesheets/export}" method="get" class="export-form">
+            <input type="month"
+                   name="month"
+                   required
+                   class="month-input">
+
+            <button type="submit" class="btn btn-success">
+                Download Excel
+            </button>
+        </form>
+    </div>
+
+			<table class="table" id="historyTable">
+				<thead>
+					<tr>
+					    <th id="thFullName" style="display: none;">Full Name</th>
+						<th>Date</th>
+						<th>Time</th>
+						<th>Location</th>
+						<th>Status</th>
+						<th>INPhoto</th>
+						<th>OutPhoto</th>
+						<th>Duration</th>
+						<th sec:authorize="hasAnyAuthority('admin', 'manager')">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="ts : ${timesheets}">
+						<td th:text="${#temporals.format(ts.date, 'dd MMM yyyy')}">20
+							Oct 2023</td>
+						<td class="time-text">
+							<!-- If timeIn is 00:00, show 'Absent'. Otherwise show the formatted time -->
+							<span class="t-in"
+							th:text="${#temporals.format(ts.timeIn, 'HH:mm') == '00:00'} ? '00:00 - 00:00' : ${#temporals.format(ts.timeIn, 'hh:mm a')}">09:00
+								AM</span> <!-- Only show the hyphen and Out Time if the employee was present -->
+							<th:block
+								th:if="${#temporals.format(ts.timeIn, 'HH:mm') != '00:00'}">
+        - <span class="t-out"
+									th:text="${#temporals.format(ts.timeOut, 'hh:mm a')}">05:30
+									PM</span>
+							</th:block>
+						</td>
+						<td th:text="${ts.location}">office</td>
+						<td th:text="${ts.status}">Present</td>
+						<td>
+							<!-- Hidden image used for reference if needed --> <img
+							th:src="@{${ts.photo}}" th:id="'img-' + ${tsStat.index}"
+							style="display: none;" /> <!-- View Button -->
+							<button type="button" class="btn-view-photo"
+								th:data-photo-url="@{${ts.photo}}"
+								onclick="openPhotoModal(this)">View Photo</button>
+						</td>
+						<td>
+							<!-- Hidden image used for reference if needed --> <img
+							th:src="@{${ts.outPhoto}}" th:id="'img-' + ${tsStat.index}"
+							style="display: none;" /> <!-- View Button -->
+							<button type="button" class="btn-view-photo"
+								th:data-photo-url="@{${ts.outPhoto}}"
+								onclick="openPhotoModal(this)">View Photo</button>
+						</td>
+						<td><span class="badge-duration"><span
+								class="row-total">0.0</span></span></td>
+						<td
+							sec:authorize="hasAnyAuthority('admin', 'manager')">
+							<!-- Cleaned up link with a dedicated class and modern SVG icon -->
+							<a class="btn-edit"
+							th:href="@{/timesheets/update/{id}(id=${ts.id})}"
+							th:onclick="'showEditForm(event, ' + ${ts.id} + ')'"> <svg
+									xmlns="http://w3.org" viewBox="0 0 24 24" fill="none"
+									stroke="currentColor" stroke-width="2" stroke-linecap="round"
+									stroke-linejoin="round" class="btn-icon">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+        </svg> Edit
+						</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<div id="photoModal" class="photo-modal" style="display: none;">
+				<div class="photo-modal-content">
+					<span class="photo-modal-close" onclick="closePhotoModal()">&times;</span>
+					<div class="photo-container">
+						<img id="modalTargetImg" src="" alt="Timesheet Photo">
+					</div>
+					<div class="photo-modal-actions">
+						<a id="modalDownloadBtn" href="" download="timesheet_photo.jpg"
+							class="btn-download">Download</a>
+					</div>
+				</div>
+			</div>
+			<!-- Right-Aligned Pagination Block Wrapper -->
+			<div th:if="${totalPages > 1}" class="pagination-container">
+				<!-- Previous Button -->
+				<a th:href="@{/timesheets(page=${currentPage - 1})}"
+					th:classappend="${currentPage == 0} ? 'disabled' : ''"
+					class="btn btn-outline-secondary"> Previous </a>
+
+				<!-- Page Numbers Wrapper -->
+				<div class="page-numbers">
+					<span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+						<a th:href="@{/timesheets(page=${i})}" th:text="${i + 1}"
+						th:classappend="${currentPage == i} ? 'btn-primary' : 'btn-outline-primary'"
+						class="btn"> </a>
+					</span>
+				</div>
+
+				<!-- Next Button -->
+				<a th:href="@{/timesheets(page=${currentPage + 1})}"
+					th:classappend="${currentPage + 1 == totalPages} ? 'disabled' : ''"
+					class="btn btn-outline-secondary"> Next </a>
+			</div>
+		</main>
+		<div id="editFormContainer" class="form-container"
+			style="display: none;">
+			<div class="modal-box">
+				<h2>Edit Timesheet Entry</h2>
+
+				<form id="editTimesheetForm" th:action="@{/timesheets/update/0}"
+					th:object="${timesheet}" method="post">
+					<input type="hidden" th:field="*{id}" />
+
+					<!-- Row 1: Date & Location -->
+					<div class="form-row">
+						<div class="form-group">
+							<label>Date</label> <input type="date" th:field="*{date}"
+								required />
+						</div>
+						<div class="form-group">
+							<label>Location</label> <input type="text" th:field="*{location}"
+								placeholder="Enter site/location" />
+						</div>
+					</div>
+
+					<!-- Row 2: Day Status -->
+					<div class="form-group">
+						<label>Day Status</label> <select th:field="*{status}">
+							<option value="Present">Present</option>
+							<option value="Absent">Absent</option>
+							<option value="Leave">Leave</option>
+							<option value="Half Day">Half Day</option>
+							<option value="Sunday">Sunday</option>
+						</select>
+					</div>
+
+					<!-- Row 3: Day Times -->
+					<div class="form-row">
+						<div class="form-group">
+							<label>Day Time In</label> <input type="time"
+								th:field="*{timeIn}" />
+						</div>
+						<div class="form-group">
+							<label>Day Time Out</label> <input type="time"
+								th:field="*{timeOut}" />
+						</div>
+					</div>
+
+					<!-- Row 4: Night Status -->
+					<div class="form-group">
+						<label>Night Status</label> <select th:field="*{nightStatus}">
+							<option value="Short Night">No Night Shift</option>
+							<option value="full night">Full Night</option>
+							<option value="half night">Half Night</option>
+						</select>
+					</div>
+
+					<!-- Row 5: Night Times -->
+					<div class="form-row">
+						<div class="form-group">
+							<label>Night Shift Time In</label> <input type="time"
+								th:field="*{nightTimeIn}" />
+						</div>
+						<div class="form-group">
+							<label>Night Shift Time Out</label> <input type="time"
+								th:field="*{nightTimeOut}" />
+						</div>
+					</div>
+
+
+					<!-- Row 6: Action Buttons -->
+					<div class="form-actions">
+						<button type="button" class="btn-cancel" onclick="hideEditForm()">Cancel</button>
+						<button type="submit" class="btn-submit">Save Changes</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</body>
+<script>
+const formattedAddress = document.querySelector(".formattedAddress");
+const showDetails = document.getElementById("showDetails");
+const webcam = document.getElementById("webcam");
+const canvas = document.getElementById("photoCanvas");
+const photoPreview = document.getElementById("photoPreview");
+const startCameraBtn = document.getElementById("startCameraBtn"); 
+
+// FIXED: Capture both distinct hidden fields separately
+const photoDataInput = document.getElementById("photoData");
+const outPhotoDataInput = document.getElementById("outPhotoData");
+
+// Global variables to store fetched data
+let currentFullAddress = "Location not available";
+let apiEndpoint = "https://api.opencagedata.com/geocode/v1/json"; 
+let apiKey = "a83f041117f24e74b2e235ba14f797f7";
+
+// 1. Geolocation Logic
+const getUserCurrentAddress = async (latitude, longitude) => {
+
+    const query = `${latitude},${longitude}`;
+    const apiUrl = `${apiEndpoint}?key=${apiKey}&q=${query}&pretty=1&no_annotations=1`;
+
+    try {
+
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        if (data.results && data.results.length > 0) {
+
+            const result = data.results[0];
+            const c = result.components;
+
+            const fullAddress = [
+                c.house_number,
+                c.building,
+                c.road,
+                c.residential,
+                c.neighbourhood,
+                c.suburb,
+                c.city || c.town || c.village,
+                c.postcode,
+                c.country
+            ]
+            .filter(value => value && value.trim() !== "")
+            .join(", ");
+
+            currentFullAddress = fullAddress || result.formatted;
+
+            console.log(result);
+            console.log(currentFullAddress);
+
+            formattedAddress.textContent = `Address: ${currentFullAddress}`;
+
+        } else {
+
+            currentFullAddress = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+            formattedAddress.textContent = "Address not found.";
+
+        }
+
+    } catch (error) {
+
+        console.error("Geocoding Error:", error);
+
+        currentFullAddress = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+        formattedAddress.textContent = currentFullAddress;
+
+    } finally {
+
+        startCameraBtn.disabled = false;
+        startCameraBtn.style.opacity = "1";
+        startCameraBtn.style.cursor = "pointer";
+    }
+};
+
+document.querySelector('.geo-btn').addEventListener('click', () => { 
+    if (navigator.geolocation) {
+        showDetails.textContent = "Fetching current GPS coordinates...";
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                showDetails.textContent = `Coordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`; 
+                getUserCurrentAddress(latitude, longitude);
+            },
+            (error) => {
+                showDetails.textContent = `GPS Error: ${error.message}`; 
+                alert("Please enable location access to unlock the camera features.");
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    } else {
+        showDetails.textContent = "Geolocation is not supported by this browser.";
+    }
+});
+ async function startCamera() {
+	    try {
+	        // CHANGED: facingMode is set to "user" for the front camera
+	        const stream = await navigator.mediaDevices.getUserMedia({ 
+	            video: { facingMode: "user" }, 
+	            audio: false 
+	        });
+	        webcam.srcObject = stream;
+	    } catch (err) {
+	        console.error("Error accessing camera: ", err);
+	        alert("Could not access camera. Please verify camera hardware permissions.");
+	    }
+	}
+ 
+// 3. Capture Photo and Draw Text Overlay
+function capturePhoto() {
+    if (!webcam.srcObject || webcam.videoWidth === 0) {
+        alert("Please start the camera stream first and wait for initialization.");
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    canvas.width = webcam.videoWidth;
+    canvas.height = webcam.videoHeight;
+    
+    ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+    
+    const now = new Date();
+    const dateTimeString = now.toLocaleString(); 
+    
+    ctx.fillStyle = "rgba(0, 0, 0, 0.65)"; 
+    ctx.fillRect(0, canvas.height - 90, canvas.width, 90); 
+    
+    ctx.fillStyle = "#ffffff"; 
+    ctx.font = "bold 16px Arial, sans-serif";
+    ctx.shadowColor = "black";
+    ctx.shadowBlur = 4;
+    
+    ctx.fillText(`📅 Date/Time: ${dateTimeString}`, 20, canvas.height - 75);
+
+    let addressLabel = "📍 Addr: ";
+    let fullAddressText = addressLabel + currentFullAddress;
+    let maxTextWidth = canvas.width - 40;
+    let words = fullAddressText.split(" ");
+    let line = "";
+    let yPosition = canvas.height - 45; // Start position for address
+
+    for (let i = 0; i < words.length; i++) {
+        let testLine = line + words[i] + " ";
+        let testWidth = ctx.measureText(testLine).width;
+        
+        if (testWidth > maxTextWidth && i > 0) {
+            ctx.fillText(line, 20, yPosition);
+            line = words[i] + " ";
+            yPosition += 25; // Move down for the next line
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, 20, yPosition);
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    photoPreview.src = dataUrl;
+    photoPreview.style.display = "block";
+
+    // ==========================================
+    // FIXED: IF/ELSE Condition to route photo to the correct hidden input
+    // ==========================================
+    const statusSelect = document.getElementById('statusSelect');
+    const status = statusSelect ? statusSelect.value : 'Present';
+
+    const dayOutVal = document.getElementById('timeOut') ? document.getElementById('timeOut').value : '';
+    const nightOutVal = document.getElementById('nightTimeOut') ? document.getElementById('nightTimeOut').value : '';
+    
+    // Check if the user has already punched out or is in a clock-out state layout
+    if (dayOutVal !== "" || nightOutVal !== "") {
+        console.log("Saving to Out-Time Photo Column...");
+        if (outPhotoDataInput) outPhotoDataInput.value = dataUrl;
+    } else {
+        console.log("Saving to In-Time Photo Column...");
+        if (photoDataInput) photoDataInput.value = dataUrl;
+    }
+    
+    // Turn off camera stream to save resources after successful capture
+    if (webcam.srcObject) {
+        webcam.srcObject.getTracks().forEach(track => track.stop());
+        console.log("Camera engine powered down successfully.");
+    }
+}
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const searchForm = document.getElementById("searchForm");
+    const searchInput = document.getElementById("searchInput");
+    const tableBody = document.querySelector("#historyTable tbody");
+    const thFullName = document.getElementById("thFullName");
+    const paginationContainer = document.querySelector(".pagination-container");
+
+    if (!searchForm || !tableBody) return;
+
+    // Pagination State Variables
+    let currentData = [];
+    let currentPage = 1;
+    const itemsPerPage = 10; // Change this value to adjust the layout size
+    let isSearching = false;
+
+    function formatDate(dateString) {
+        if (!dateString) return "";
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const parts = dateString.split("-");
+        if (parts.length !== 3) return dateString;
+        return `${parts[2]} ${months[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+    }
+
+    function formatTime(timeString) {
+        if (!timeString || timeString === "00:00:00" || timeString === "00:00") return "00:00";
+        const parts = timeString.split(":");
+        if (parts.length < 2) return timeString;
+        let hours = parseInt(parts[0], 10);
+        const minutes = parts[1];
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        return `${hours < 10 ? '0' + hours : hours}:${minutes} ${ampm}`;
+    }
+
+    function calculateDuration(timeIn, timeOut) {
+        if (!timeIn || !timeOut || timeIn === "00:00:00" || timeIn === "00:00") return "0 hrs 0 min";
+        
+        const startParts = timeIn.split(":");
+        const endParts = timeOut.split(":");
+        if (startParts.length < 2 || endParts.length < 2) return "0 hrs 0 min";
+        
+        const startMinutes = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
+        const endMinutes = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
+        
+        if (endMinutes <= startMinutes) return "0 hrs 0 min";
+        
+        const diffMinutes = endMinutes - startMinutes;
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+        
+        return `${hours} hrs ${mins} min`;
+    }
+
+    // Function to render rows for the active page slice
+    function renderTablePage() {
+        tableBody.innerHTML = ""; 
+        const totalCols = isSearching ? 9 : 8; 
+
+        if (!Array.isArray(currentData) || currentData.length === 0) { 
+            tableBody.innerHTML = `<tr><td colspan="${totalCols}" class="text-center text-muted">No records found.</td></tr>`; 
+            if (paginationContainer) paginationContainer.innerHTML = "";
+            return; 
+        } 
+
+        // Extract slice boundaries
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageItems = currentData.slice(startIndex, endIndex);
+
+        pageItems.forEach(ts => { 
+            const row = document.createElement("tr"); 
+            const isAbsent = ts.timeIn === "00:00:00" || ts.timeIn === "00:00" || !ts.timeIn; 
+            const timeInDisplay = isAbsent ? "00:00 - 00:00" : formatTime(ts.timeIn); 
+            const timeOutDisplay = (!isAbsent && ts.timeOut) ? ` - <span class="t-out">${formatTime(ts.timeOut)}</span>` : ''; 
+            const calculatedHours = calculateDuration(ts.timeIn, ts.timeOut); 
+            
+            const fullName = `${ts.firstName || ''} ${ts.lastName || ''}`.trim() || 'Unknown'; 
+            const fullNameColumn = isSearching ? `<td class="user-fullname"><strong>${fullName}</strong></td>` : ''; 
+
+            row.innerHTML = ` 
+                ${fullNameColumn} 
+                <td>${formatDate(ts.date)}</td> 
+                <td class="time-text"> 
+                    <span class="t-in">${timeInDisplay}</span>${timeOutDisplay} 
+                </td> 
+                <td>${ts.location || 'Office'}</td> 
+                <td>${ts.status || 'Present'}</td> 
+                <td> 
+                    <button type="button" class="btn-view-photo" data-photo-url="${ts.photo || ''}" onclick="openPhotoModal(this)">View Photo</button> 
+                </td> 
+                <td> 
+                    <button type="button" class="btn-view-photo" data-photo-url="${ts.outPhoto || ''}" onclick="openPhotoModal(this)">View Photo</button> 
+                </td> 
+                <td><span class="badge-duration"><span class="row-total">${calculatedHours}</span></span></td> 
+                <td> 
+                    <a class="btn-edit" href="/timesheets/update/${ts.timesheetId || ts.id}" onclick="if(typeof showEditForm === 'function') { showEditForm(event, '${ts.timesheetId || ts.id}'); }"> 
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px;"> 
+                            <path d="M12 20h9"></path> 
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path> 
+                        </svg>Edit 
+                    </a> 
+                </td> 
+            `; 
+            tableBody.appendChild(row); 
+        });
+
+        renderControls();
+    }
+
+    // Function to draw pagination markup inside the container
+    function renderControls() {
+        if (!paginationContainer) return;
+        paginationContainer.innerHTML = "";
+
+        const totalPages = Math.ceil(currentData.length / itemsPerPage);
+        if (totalPages <= 1) return; // Hide navigation if everything fits on page 1
+
+        const nav = document.createElement("nav");
+        nav.className = "pagination-nav";
+
+        // Previous button
+        const prevBtn = document.createElement("button");
+        prevBtn.textContent = "Previous";
+        prevBtn.type = "button";
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTablePage();
+            }
+        });
+        nav.appendChild(prevBtn);
+
+        // Page buttons loop
+        for (let i = 1; i <= totalPages; i++) {
+            const pageBtn = document.createElement("button");
+            pageBtn.textContent = i;
+            pageBtn.type = "button";
+            if (i === currentPage) pageBtn.classList.add("active");
+            
+            pageBtn.addEventListener("click", () => {
+                currentPage = i;
+                renderTablePage();
+            });
+            nav.appendChild(pageBtn);
+        }
+
+        // Next button
+        const nextBtn = document.createElement("button");
+        nextBtn.textContent = "Next";
+        nextBtn.type = "button";
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener("click", () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTablePage();
+            }
+        });
+        nav.appendChild(nextBtn);
+
+        paginationContainer.appendChild(nav);
+    }
+
+    searchForm.addEventListener("submit", function (event) { 
+        event.preventDefault(); 
+        
+        const keyword = searchInput.value.trim(); 
+        isSearching = keyword.length > 0; 
+        
+        if (thFullName) { 
+            thFullName.style.display = isSearching ? "" : "none"; 
+        } 
+
+        // Always show the container because it will now handle search pagination dynamically
+        if (paginationContainer) { 
+            paginationContainer.style.display = ""; 
+        } 
+
+        fetch(`/timesheets/search?keyword=${encodeURIComponent(keyword)}`) 
+            .then(response => { 
+                if (!response.ok) throw new Error(`Server returned error status code ${response.status}`); 
+                return response.json(); 
+            }) 
+            .then(data => { 
+                // Store fetched dataset array, reset active index and process page rendering
+                currentData = data;
+                currentPage = 1;
+                renderTablePage();
+            }) 
+            .catch(error => { 
+                console.error("AJAX error processing layout arrays:", error); 
+                const totalCols = isSearching ? 9 : 8; 
+                tableBody.innerHTML = `<tr><td colspan="${totalCols}" class="text-center text-danger">Failed to load data.</td></tr>`; 
+                if (paginationContainer) paginationContainer.innerHTML = "";
+            }); 
+    });
+
+});
+
+
+</script>
+<script>
+        // Automatically set the month input field to the current calendar month
+        document.addEventListener("DOMContentLoaded", () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            document.getElementById("monthPicker").value = `${year}-${month}`;
+        });
+
+        function downloadExcel() {
+            const monthValue = document.getElementById("monthPicker").value;
+            const exportBtn = document.getElementById("exportBtn");
+            const statusMessage = document.getElementById("statusMessage");
+
+            if (!monthValue) {
+                showStatus("Please choose a valid month.", "error");
+                return;
+            }
+
+            // Construct the backend controller endpoint URL
+            	// Change "timrsheets" to "timesheets"
+const apiUrl = `/timesheets/attendance-summary/export?month=${monthValue}`;
+
+
+            // Update UI state during download
+            exportBtn.disabled = true;
+            showStatus("Generating sheet... Please wait.", "success");
+
+            // Fetch the file as a raw data blob object
+            fetch(apiUrl, { method: 'GET' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to process your request server-side.");
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Generate a local browser anchor tab link to trigger download popup window
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Attendance_Summary_${monthValue}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup internal memory tracking links references
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                showStatus("");
+            })
+            .catch(error => {
+                console.error("Export Error: ", error);
+                showStatus("Export failed. Please try again later.", "error");
+            })
+            .finally(() => {
+                exportBtn.disabled = false;
+            });
+        }
+
+        function showStatus(text, type) {
+            const statusMessage = document.getElementById("statusMessage");
+            statusMessage.textContent = text;
+            statusMessage.style.display = "block";
+            statusMessage.className = `status-message status-${type}`;
+        }
+    </script>
+
+</html>

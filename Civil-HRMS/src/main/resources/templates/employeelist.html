@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org" xmlns:sec="http://thymeleaf.org/extras/spring-security">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" th:href="@{/css/Header-Footer.css}">
+<link rel="stylesheet" th:href="@{/css/employeelist.css}">
+
+<link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.css" />
+<script src="https://cdn.datatables.net/2.3.8/js/dataTables.js"></script>
+ <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdn.datatables.net/2.3.8/js/dataTables.js"></script>
+
+<title>Employee Management</title>
+</head>
+<body>
+
+	<header class="navbar">
+		<div class="logo">CIVIL DECK INFRAPROJECTS PVT LTD</div>
+		<nav>
+			<ul class="nav-links">
+				<li class="dropdown">
+    <a href="javascript:void(0)" class="dropbtn">Timesheet Menu</a>
+    <div class="dropdown-content">
+        <a th:href="@{/timesheets}">Timesheet</a>
+        
+        <!-- Corrected: Removed invalid nested li tag -->
+        <a th:href="@{/dashBoard}" 
+           sec:authorize="hasAnyAuthority('admin', 'manager', 'accountant')">Dashboard</a>
+    </div>
+</li>
+				<li><a th:href="@{/profile}">My Profile</a></li>
+				  <li sec:authorize="hasAnyAuthority('admin', 'manager')">
+    <a th:href="@{/employees}">Employee List</a>
+</li>
+				<li><a th:href="@{/purchases}">Purchase</a></li>
+				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/logout}">Logout</a></li>
+			</ul>
+		</nav>
+	</header>
+
+	<main class="container">
+		<h2>Employee Management</h2>
+
+		<!-- Search and Add Section -->
+		<div class="action-bar">
+			<!-- Matches @GetMapping("/employees") -->
+			<form th:action="@{/employees}" method="get">
+				<!-- <input type="text" name="keyword"
+					placeholder="Search by first name..." th:value="${keyword}">
+				<button type="submit" class="btn-search">Search</button> -->
+				<a th:if="${keyword != null}" th:href="@{/employees}"
+					style="font-size: 13px; align-self: center;">Clear</a>
+			</form>
+			<a th:href="@{/registrations}" class="btn-add">Add Employee</a>
+		</div>
+
+		<!-- Employee Table -->
+		<table id="myTable" class="employee-table display">
+			<thead>
+				<tr>
+					<th>Full Name</th>
+					<th>Email</th>
+					<th>Phone No</th>
+					<th>Designation</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- Iterates over listEmployees from Controller -->
+				<tr th:each="employee : ${listEmployees}">
+					<!-- Using literal substitution for cleaner name concatenation -->
+					<td th:text="|${employee.firstName} ${employee.lastName}|"></td>
+					<td th:text="${employee.email}"></td>
+					<td th:text="${employee.phoneNo}"></td>
+					<td th:text="${employee.designation}"></td>
+					<td>
+						<!-- Corrected Edit link with dynamic ID --> 
+						<button type="button" 
+        class="btn-edit" 
+        th:onclick="openEditModal(
+            [[${employee.user_id}]], 
+            [[${employee.firstName}]], 
+            [[${employee.lastName}]], 
+            [[${employee.email}]], 
+            [[${employee.phoneNo}]], 
+            [[${employee.dob}]], 
+            [[${employee.doj}]], 
+            [[${employee.designation}]], 
+            [[${employee.gender}]], 
+            [[${employee.aadharNO}]], 
+            [[${employee.panCardNo}]], 
+            [[${employee.address}]]
+        )">
+    Edit
+</button>
+
+						<!-- Fixed typo in class name and added missing space before th:href -->
+						<a class="btn-delete"
+						th:href="@{/employees/delete/{id}(id=${employee.user_id})}"
+						onclick="return confirm('Are you sure?')">Delete</a></td>
+				</tr>
+
+				<!-- Empty State -->
+				<tr th:if="${#lists.isEmpty(listEmployees)}">
+					<td colspan="4" style="text-align: center;">No employees
+						found.</td>
+				</tr>
+			</tbody>
+		</table>
+	</main>
+<div id="editModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-container">
+        <h2>Edit Employee Details</h2>
+
+        <form id="editForm" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+    <input type="hidden" id="modalUserId" name="user_id" />
+
+
+            <!-- Form Grid Layout -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="modalFirstName">First Name</label>
+                    <input type="text" id="modalFirstName" name="firstName" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalLastName">Last Name</label>
+                    <input type="text" id="modalLastName" name="lastName" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalEmail">Email Address</label>
+                    <input type="email" id="modalEmail" name="email" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalPhoneNo">Phone Number</label>
+                    <input type="text" id="modalPhoneNo" name="phoneNo" />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalDob">Date of Birth</label>
+                    <input type="date" id="modalDob" name="dob" />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalDoj">Date of Joining</label>
+                    <input type="date" id="modalDoj" name="doj" />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalDesignation">Designation</label>
+                    <input type="text" id="modalDesignation" name="designation" />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalGender">Gender</label>
+                    <select id="modalGender" name="gender">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="modalAadharNo">Aadhar Number</label>
+                    <input type="text" id="modalAadharNo" name="aadharNO" />
+                </div>
+
+                <div class="form-group">
+                    <label for="modalPanCardNo">PAN Card Number</label>
+                    <input type="text" id="modalPanCardNo" name="panCardNo" />
+                </div>
+                
+                <div class="form-group full-width">
+                    <label for="modalAddress">Residential Address</label>
+                    <textarea id="modalAddress" name="address" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-submit">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+ <script type="text/javascript">
+    $(document).ready( function () {
+        // FIXED: Selector changed from '#myTable' to '#employeeTable' to match your actual table ID
+        $('#myTable').DataTable({
+            "paging": true,      
+            "ordering": true,    
+            "columnDefs": [
+                { "orderable": false, "targets": 4 } /* Prevents table sort UI actions on the 'Actions' column */
+            ]
+        });
+    });
+    </script>
+     <script>
+function openEditModal(id, firstName, lastName, email, phoneNo, dob, doj, designation, gender, aadharNo, panCardNo, address) {
+    // Set form action endpoint dynamically
+   document.getElementById('editForm').action = '/employees/update/' + id;
+
+    // Populate explicit fields
+    document.getElementById('modalUserId').value = id;
+    document.getElementById('modalFirstName').value = firstName || '';
+    document.getElementById('modalLastName').value = lastName || '';
+    document.getElementById('modalEmail').value = email || '';
+    document.getElementById('modalPhoneNo').value = phoneNo || '';
+    document.getElementById('modalDob').value = dob || '';
+    document.getElementById('modalDoj').value = doj || '';
+    document.getElementById('modalDesignation').value = designation || '';
+    document.getElementById('modalGender').value = gender || '';
+    document.getElementById('modalAadharNo').value = aadharNo || '';
+    document.getElementById('modalPanCardNo').value = panCardNo || '';
+    document.getElementById('modalAddress').value = address || '';
+    
+    // Display form overlay interface
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close the modal cleanly if a user clicks outside the form container box
+window.onclick = function(event) {
+    const modal = document.getElementById('editModal');
+    if (event.target === modal) {
+        closeEditModal();
+    }
+}
+</script>
+</html>

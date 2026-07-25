@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org" xmlns:sec="http://thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Profile</title>
+   <link rel="stylesheet" th:href="@{/css/profile.css}">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" th:href="@{/css/Header-Footer.css}">
+</head>
+<body>
+
+ <header class="navbar">
+		<div class="logo">CIVIL DECK INFRAPROJECTS PVT LTD</div>
+		<nav>
+			<ul class="nav-links">
+				<li class="dropdown">
+    <a href="javascript:void(0)" class="dropbtn">Timesheet Menu</a>
+    <div class="dropdown-content">
+        <a th:href="@{/timesheets}">Timesheet</a>
+        
+        <!-- Corrected: Removed invalid nested li tag -->
+        <a th:href="@{/dashBoard}" 
+           sec:authorize="hasAnyAuthority('admin', 'manager', 'accountant')">Dashboard</a>
+    </div>
+</li>
+				<li><a th:href="@{/profile}">My Profile</a></li>
+				<li sec:authorize="hasAnyAuthority('admin', 'manager')">
+    <a th:href="@{/employees}">Employee List</a>
+</li>
+				<li><a th:href="@{/purchases}">Purchase</a></li>
+				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/logout}">Logout</a></li>
+			</ul>
+		</nav>
+	</header>
+	
+<main class="profile-container">
+  <!-- Only renders if 'user' is successfully passed from Controller -->
+  <div class="profile-card" th:if="${user != null}">
+    
+    <section class="profile-header">
+      <!-- <img th:src="${user.photoUrl != null ? user.photoUrl : '/images/default.png'}" 
+           alt="Employee Photo" class="profile-pic"> -->
+     <h1 class="profile-name" th:text="${user.firstName + ' ' + user.lastName}">Employee Name</h1>
+      <p class="designation-badge" th:text="${user.designation}">Designation</p>
+    </section>
+
+    <section class="profile-info-grid">
+      <div class="info-item"><label>Email ID</label><p th:text="${user.email}">example@mail.com</p></div>
+      <div class="info-item"><label>Phone No.</label><p th:text="${user.phoneNo}">N/A</p></div>
+      <div class="info-item"><label>Joining Date</label><p th:text="${user.doj}">N/A</p></div>
+      <div class="info-item"><label>Date of Birth</label><p th:text="${user.dob}">N/A</p></div>
+      <div class="info-item"><label>Gender</label><p th:text="${user.gender}">N/A</p></div>
+      <div class="info-item"><label>Address</label><p th:text="${user.address}">N/A</p></div>
+    </section>
+</div>
+  <!-- Error display if DB fetch fails -->
+  <div th:unless="${user != null}" style="text-align: center; color: red; margin-top: 50px;">
+      <p>Error: Could not retrieve your profile. Please check your login session.</p>
+  </div>
+</main>
+</body>
+</html>
