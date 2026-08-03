@@ -31,7 +31,11 @@
 				<li sec:authorize="hasAnyAuthority('admin', 'manager')">
     <a th:href="@{/employees}">Employee List</a>
                 </li>
-                <li><a th:href="@{/purchases}">Purchase</a></li>
+                 <li class="dropdown"><a href="javascript:void(0)"
+					class="dropbtn">Purchase</a>
+					<div class="dropdown-content">
+						<a th:href="@{/purchases}">Purchase</a> <a th:href="@{/challans}">Challans</a>
+					</div></li>
 				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
 				<li><a th:href="@{/logout}">Logout</a></li>
 			</ul>
@@ -43,7 +47,7 @@
 		<div class="card">
 			<h2>New Material Purchase</h2>
 			<form class="purchase-form" th:action="@{/purchases/save}"
-				th:object="${purchase}" method="post">
+				th:object="${purchase}" method="post" enctype="multipart/form-data" id="purchaseForm">
 				<div class="form-group">
 					<label>Company Name</label> <input type="text"
 						th:field="*{CompanyName}" placeholder="Enter company..." required>
@@ -154,7 +158,7 @@
 							<th>Amount</th>
 							<th>InvoicePhoto</th>
 							<th>MaterialPhoto</th>
-							<th>Action</th>
+							<th sec:authorize="hasAnyAuthority('admin', 'manager')">Action</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -194,7 +198,7 @@
         View Photo
     </button>
 </td>
-<td>
+<td sec:authorize="hasAnyAuthority('admin', 'manager')">
     <button type="button" 
             th:onclick="deletePurchase([[${item.p_Id}]], this)" 
             style="background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">

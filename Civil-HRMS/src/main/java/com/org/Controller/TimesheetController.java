@@ -257,22 +257,41 @@ public class TimesheetController {
             @RequestParam("month") @DateTimeFormat(pattern = "yyyy-MM") YearMonth month, 
             HttpServletResponse response) throws IOException {
         
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        String fileName = "Attendance_Summary_" + month.toString() + ".xlsx";
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
-        
-        // CRITICAL FIX: Call a service method explicitly designed to fetch ALL employee records
-        List<Timesheet> summaryList = timesheetService.getAllEmployeesTimesheet(month);
-        
-        String companyName = "";
-        
-        AttendanceSummaryExcelExporter exporter = new AttendanceSummaryExcelExporter(
-                summaryList, 
-                companyName, 
-                month.toString()
-        );
-                
-        exporter.export(response);
+        try {
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            String fileName = "Attendance_Summary_" + month.toString() + ".xlsx";
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            
+            List<Timesheet> summaryList = timesheetService.getAllEmployeesTimesheet(month);
+            
+            // Check if data retrieval returned null
+            if (summaryList == null) {
+                throw new RuntimeException("Timesheet service returned null data.");
+            }
+
+            String companyName = ""; // Ensure your exporter handles empty strings safely
+            
+            AttendanceSummaryExcelExporter exporter = new AttendanceSummaryExcelExporter(
+                    summaryList, 
+                    companyName, 
+                    month.toString()
+            );
+                    
+            exporter.export(response);
+            
+        } catch (Exception e) {
+            // This will print the actual error stack trace to your IDE/server console
+            e.printStackTrace(); 
+            
+            // Reset response to send a clean error message instead of a broken stream
+            if (!response.isCommitted()) {
+                response.reset();
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+            }
+        }
     }
+
 }
     

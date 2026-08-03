@@ -43,7 +43,11 @@
             <li sec:authorize="hasAnyAuthority('admin', 'manager')"> 
                 <a th:href="@{/employees}">Employee List</a> 
             </li> 
-            <li><a th:href="@{/purchases}">Purchase</a></li> 
+            <li class="dropdown"><a href="javascript:void(0)"
+					class="dropbtn">Purchase</a>
+					<div class="dropdown-content">
+						<a th:href="@{/purchases}">Purchase</a> <a th:href="@{/challans}">Challans</a>
+					</div></li>
             <li><a th:href="@{/labourRecords}">Labour Entries</a></li> 
             <li><a th:href="@{/logout}">Logout</a></li> 
         </ul> 

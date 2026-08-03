@@ -47,7 +47,11 @@
 				<li sec:authorize="hasAnyAuthority('admin', 'manager')">
                   <a th:href="@{/employees}">Employee List</a>
                 </li>
-				<li><a th:href="@{/purchases}">Purchase</a></li>
+				 <li class="dropdown"><a href="javascript:void(0)"
+					class="dropbtn">Purchase</a>
+					<div class="dropdown-content">
+						<a th:href="@{/purchases}">Purchase</a> <a th:href="@{/challans}">Challans</a>
+					</div></li>
 				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
 				<li><a th:href="@{/logout}">Logout</a></li>
 			</ul>
@@ -161,7 +165,7 @@
     <th>Carpenter</th>
     <th>Male Coolie</th>
     <th>Female Coolie</th>
-    <th>Action</th>
+    <th sec:authorize="hasAnyAuthority('admin', 'manager')">Action</th>
 </tr>
 </thead>
                 <tbody>
@@ -188,7 +192,7 @@
 <td th:text="${item.numCarpenter}"></td>
 <td th:text="${item.numMaleCoolie}"></td>
 <td th:text="${item.numFemaleCoolie}"></td>
-<td>
+<td sec:authorize="hasAnyAuthority('admin', 'manager')">
     <!-- Inline style makes the button red directly inside your HTML -->
     <button class="btn-delete" 
             style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" 
@@ -297,45 +301,62 @@ function syncLaborFields() {
 }
 </script>
 <script>
-        function deleteRecord(id) {
-            // Confirmation dialog before deleting
-            if (!confirm("Are you sure you want to delete record")) {
-                return;
-            }
-            const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
-            const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
-
-            // AJAX call to your @DeleteMapping endpoint
-            fetch('/labourRecords/' + id, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    // Success: Remove row from HTML DOM and show message
-                    document.getElementById('row-' + id).remove();
-                    showMessage("Record " + id + " deleted successfully.", "green");
-                } else if (response.status === 404) {
-                    // Handled 404 error from your controller condition
-                    showMessage("Delete failed: Record not found in database.", "red");
-                } else {
-                    // Any other server errors
-                    showMessage("Server error occurred.", "red");
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showMessage("Network error. Could not connect to server.", "red");
-            });
+    function deleteRecord(id) {
+        if (!confirm("Are you sure you want to delete this record?")) {
+            return;
         }
 
-        function showMessage(text, color) {
-            const msgDiv = document.getElementById('message');
+        // 1. Safely extract CSRF tokens
+        const csrfMeta = document.querySelector("meta[name='_csrf']");
+        const csrfHeaderMeta = document.querySelector("meta[name='_csrf_header']");
+        
+        const token = csrfMeta ? csrfMeta.getAttribute("content") : "";
+        const header = csrfHeaderMeta ? csrfHeaderMeta.getAttribute("content") : "";
+
+        // 2. Build request headers dynamically
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Only append CSRF if security metas exist on the page
+        if (header && token) {
+            headers[header] = token;
+        }
+
+        // 3. Make the AJAX call
+        fetch('/labourRecords/' + id, {
+            method: 'DELETE',
+            headers: headers // CSRF token is now included here!
+        })
+        .then(response => {
+            if (response.ok) {
+                const row = document.getElementById('row-' + id);
+                if (row) row.remove();
+                showMessage("Record " + id + " deleted successfully.", "green");
+            } else if (response.status === 404) {
+                showMessage("Delete failed: Record not found in database.", "red");
+            } else if (response.status === 403) {
+                showMessage("Access Denied: Bad CSRF Token or Bad Permissions.", "red");
+            } else {
+                showMessage("Server error occurred.", "red");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage("Network error. Could not connect to server.", "red");
+        });
+    }
+
+    function showMessage(text, color) {
+        const msgDiv = document.getElementById('message');
+        if (msgDiv) {
             msgDiv.innerText = text;
             msgDiv.style.color = color;
+        } else {
+            // Fallback alert box if the element is missing from the HTML page
+            alert(text);
         }
-    </script>
+    }
+</script>
 
 </html>

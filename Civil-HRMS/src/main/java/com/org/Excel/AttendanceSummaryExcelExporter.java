@@ -102,41 +102,50 @@ public class AttendanceSummaryExcelExporter {
             String nightStatus = record.getNightStatus();
 
             LocalDate today = LocalDate.now();
+            YearMonth reportMonth = YearMonth.parse(monthStr);
             
-            YearMonth reportMonth = YearMonth.parse( monthStr);
+            int startDay = 1; 
             
-            int sundayCount = 0;
-
-            if (reportMonth.equals(YearMonth.now())) {
-
-                int lastDay = today.getDayOfMonth();
-
-                for (int day = 1; day <= lastDay; day++) {
-                    if (reportMonth.atDay(day).getDayOfWeek() == DayOfWeek.SUNDAY) {
-                        sundayCount++;
+            if (record.getUser() != null && record.getUser().getDoj() != null && !record.getUser().getDoj().trim().isEmpty()) {
+                try {
+                   
+                    LocalDate joiningDate = LocalDate.parse(record.getUser().getDoj().trim());
+                    YearMonth joiningMonth = YearMonth.from(joiningDate);
+                    
+                    // जर जॉइनिंग याच महिन्यातील असेल, तर लूप जॉइनिंगच्या दिवसापासून सुरू करा
+                    if (joiningMonth.equals(reportMonth)) {
+                        startDay = joiningDate.getDayOfMonth(); // उदा. १५ तारीख
                     }
+                } catch (Exception e) {
+                    
+                    startDay = 1; 
                 }
-
-            } else {
-
-                for (int day = 1; day <= reportMonth.lengthOfMonth(); day++) {
-                    if (reportMonth.atDay(day).getDayOfWeek() == DayOfWeek.SUNDAY) {
-                        sundayCount++;
-                    }
-                }
-
             }
-            // Calculate metrics using upgraded smart parser engine
+
+
+            int lastDay = reportMonth.lengthOfMonth();
+            if (reportMonth.equals(YearMonth.now())) {
+                lastDay = today.getDayOfMonth();
+            }
+
+            int sundayCount = 0;
+            // startDay पासून पुढे जेवढे रविवार येतील तेच फक्त मोजले जातील
+            for (int day = startDay; day <= lastDay; day++) {
+                if (reportMonth.atDay(day).getDayOfWeek() == DayOfWeek.SUNDAY) {
+                    sundayCount++;
+                }
+            }
+            // -------------------------------------------------------
+
             double presentDays = countStatus(rawStatus, "Present");
             double absentDays  = countStatus(rawStatus, "Absent");
             double halfDays    = countStatus(rawStatus, "Half Day");
             double holiDays    = countStatus(rawStatus, "holi Day");
-            double sundayDays = sundayCount;
+            double sundayDays  = sundayCount;
             double fullNights  = countStatus(nightStatus, "Full Night");
             double halfNights  = countStatus(nightStatus, "Half Night");
 
-            // Total Attendance formula calculation
-            double totalAttendance = presentDays + (halfDays * 0.5) + fullNights + (halfNights * 0.5)+sundayDays+ holiDays;
+            double totalAttendance = presentDays + (halfDays * 0.5) + fullNights + (halfNights * 0.5) + sundayDays + holiDays;
 
             // Populate data fields
             createCell(row, columnCount++, presentDays, cellStyle);     // 4. PRESENT DAYS
@@ -148,12 +157,13 @@ public class AttendanceSummaryExcelExporter {
             createCell(row, columnCount++, holiDays, cellStyle); 
             createCell(row, columnCount++, totalAttendance, cellStyle); // 10. TOTAL ATTENDANCE DAYS
         }
-
-        // Auto-size columns (0 to 9)
-        for (int i = 0; i < 10; i++) {
+        
+        // Auto-size columns चा लूप १० ऐवजी ११ करा कारण 'HOLYDAYS' चा कॉलम वाढला आहे
+        for (int i = 0; i < 11; i++) {
             sheet.autoSizeColumn(i);
         }
     }
+
 
     private double countStatus(String rawStatus, String target) {
         if (rawStatus == null || rawStatus.trim().isEmpty()) {
