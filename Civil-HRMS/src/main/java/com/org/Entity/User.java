@@ -2,6 +2,9 @@ package com.org.Entity;
 
 import java.util.Collection;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
@@ -44,21 +47,22 @@ public class User {
 	@Column(nullable = false)
 	private String password;
 
-	@JsonManagedReference
 	@ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Collection<Role> roles;
+	@JoinTable(
+	    name = "user_roles",
+	    joinColumns = @JoinColumn(name = "user_id"),
+	    inverseJoinColumns = @JoinColumn(name = "role_id")
+	)
+	@JsonIgnore // <-- Add this. It safely cuts off the circular loop.
+	private Collection<Role> roles;
+	
 	@JsonManagedReference
 	@OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Timesheet> timesheets;
 	
-	@JsonManagedReference
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "company_id", nullable = true) // Changed to true temporarily
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "company_id") // or whatever your database column is named
+	@JsonIgnoreProperties({"transactions", "users", "employees"}) // Stops Jackson from looping back
 	private Company company;
 	
 	@Column(name = "aadharNo")

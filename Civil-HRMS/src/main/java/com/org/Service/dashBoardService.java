@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.org.Entity.Timesheet;
+import com.org.Entity.User;
 
 public interface dashBoardService {
 
@@ -14,5 +15,7 @@ public interface dashBoardService {
 	int getPendingCount(LocalDate dateSearch);
 
 	int getTotalUsersCount();
+
+	List<User> getAllUsers();
 
 }

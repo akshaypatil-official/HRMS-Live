@@ -2,6 +2,7 @@ package com.org.ServiceImpl;
 
 import java.util.List;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.org.Entity.Purchase;
@@ -32,9 +33,9 @@ public class PurchaseServiceImpl implements PurchaseService {
 
 	@Override
 	public List<Purchase> getAllPurchases() {
-		return purchaseRepository.findAll();
+	    return purchaseRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "date")); 
 	}
-
+	
 	@Override
 	public Purchase getPurchaseById(long id) {
 		return purchaseRepository.findById(id)

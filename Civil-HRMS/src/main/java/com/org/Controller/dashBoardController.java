@@ -1,7 +1,12 @@
 package com.org.Controller;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.org.Entity.Timesheet;
+import com.org.Entity.User;
 import com.org.Service.dashBoardService;
 
 @Controller
@@ -31,41 +37,48 @@ public class dashBoardController {
             dateSearch = LocalDate.now();
         }
         
-        // --- PRINT INPUT VARIABLE ---
-        System.out.println(">>> Dashboard Requested for Date: " + dateSearch);
-
-        // Fetch filtered values from service
+        // 1. Fetch data from services
         List<Timesheet> activities = dashBoardServ.getAttendanceByDate(dateSearch);
         int totalUsers = dashBoardServ.getTotalUsersCount();
         int pendingApprovals = dashBoardServ.getPendingCount(dateSearch);
-        
-        // NEW: Fetch all timesheet records
-        
+        List<User> allEmployees = dashBoardServ.getAllUsers(); 
 
-        // --- PRINT FETCHED VALUES ---
-        System.out.println(">>> Service Data Fetched successfully:");
-        System.out.println(" Total Activities Found: " + (activities != null ? activities.size() : 0));
-        
-        if (activities != null) {
-            for (Timesheet activity : activities) {
-                if (activity.getUser() != null) {
-                    System.out.println("  Employee: " + activity.getUser().getFirstName() + " " + activity.getUser().getLastName());
-                } else {
-                    System.out.println("  Employee: [No User linked to this timesheet record]");
-                }
-                System.out.println("  -> Photo Path: " + activity.getPhoto());
-                System.out.println("  -> OutPhoto Path: " + activity.getOutPhoto());
-            }
+        // 2. Extract active IDs into an effectively final Set right away
+        final Set<Long> finalActiveIds = (activities == null) ? new HashSet<>() : 
+            activities.stream()
+                .filter(activity -> activity.getUser() != null)
+                .map(activity -> activity.getUser().getUser_id()) // Ensure getId() returns Long
+                .collect(Collectors.toSet());
+
+        // 3. Find employees who DID NOT fill attendance at all today
+        List<String> missingAttendanceNames = new ArrayList<>();
+        if (allEmployees != null) {
+            missingAttendanceNames = allEmployees.stream()
+                .filter(emp -> !finalActiveIds.contains(emp.getUser_id()))
+                .map(emp -> emp.getFirstName() + " " + emp.getLastName())
+                .collect(Collectors.toList());
         }
-        System.out.println(" Total Employees Count: " + totalUsers);
-        System.out.println(" Pending Approvals Count: " + pendingApprovals);
 
-        // Add to model
+        // 4. Find employees who filled attendance but status is still null
+        List<String> pendingApprovalNames = new ArrayList<>();
+        if (activities != null) {
+            pendingApprovalNames = activities.stream()
+                .filter(activity -> activity.getStatus() == null && activity.getUser() != null)
+                .map(activity -> activity.getUser().getFirstName() + " " + activity.getUser().getLastName())
+                .collect(Collectors.toList());
+        }
+
+        // 5. Combine lists cleanly
+        List<String> totalPendingActionList = new ArrayList<>();
+        totalPendingActionList.addAll(missingAttendanceNames);
+        totalPendingActionList.addAll(pendingApprovalNames);
+
+        // 6. Bind to UI layout
         model.addAttribute("activities", activities);
         model.addAttribute("totalEmployees", totalUsers);
         model.addAttribute("pendingApprovals", pendingApprovals);
         model.addAttribute("currentSearchDate", dateSearch);
-     
+        model.addAttribute("pendingEmployees", totalPendingActionList); 
 
         return "dash-Board";
     }

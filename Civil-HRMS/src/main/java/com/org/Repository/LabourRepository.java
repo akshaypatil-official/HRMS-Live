@@ -11,5 +11,5 @@ public interface LabourRepository extends JpaRepository<Labour, Long>{
 
 	List<Labour> findByUser(User user);
 
-	List<Labour> findAllByOrderByDateDesc();
+	List<Labour> findAllByOrderByDateDescIdDesc();
 }

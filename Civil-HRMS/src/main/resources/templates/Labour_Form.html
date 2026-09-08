@@ -53,6 +53,7 @@
 						<a th:href="@{/purchases}">Purchase</a> <a th:href="@{/challans}">Challans</a>
 					</div></li>
 				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/material-ledger}">Materials</a></li> 
 				<li><a th:href="@{/logout}">Logout</a></li>
 			</ul>
 		</nav>
@@ -235,38 +236,23 @@
 <script type="text/javascript">
 
 $(document).ready(function () {
-
     $('#myTable').DataTable({
-        pageLength: 10,
-        lengthMenu: [5, 10, 25, 50, 100],
         searching: true,
-        ordering: true,
-        paging: true,
-        responsive: true,
-
+        ordering: false,
         dom: 'Bfrtip',
-
         buttons: [
             {
                 extend: 'excelHtml5',
                 text: 'Download Excel',
                 title: 'Labour Report',
-                	
                 exportOptions: {
-                	columns: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10] 
+                    columns: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10]
                 }
-            }
-        ],
-
-        columnDefs: [
-            {
-            	targets: [5], 
-                orderable: false
             }
         ]
     });
-
 });
+
 function openPhotoModal(button) {
     const url = button.dataset.photoUrl;
 

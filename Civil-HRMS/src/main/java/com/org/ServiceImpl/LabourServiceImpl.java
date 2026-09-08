@@ -25,11 +25,10 @@ public class LabourServiceImpl implements LabourService{
 	}
 	 
 	@Override
-    public List<Labour> getAllLabours() {
-        // Calls the custom descending order query method
-        return labourRepository.findAllByOrderByDateDesc();
-    }
-	 
+	public List<Labour> getAllLabours() {
+	    // This will now compile successfully
+	    return labourRepository.findAllByOrderByDateDescIdDesc();
+	}	
 	 
 	 @Override
 	 @Transactional

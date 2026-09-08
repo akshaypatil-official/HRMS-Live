@@ -36,6 +36,7 @@
 						<a th:href="@{/purchases}">Purchase</a> <a th:href="@{/challans}">Challans</a>
 					</div></li>
 				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/material-ledger}">Materials</a></li> 
 				<li><a th:href="@{/logout}">Logout</a></li>
 			</ul>
 		</nav>
@@ -59,6 +60,7 @@
 					<option value="DayNight">Night</option>
 					<option value="Absent">Absent</option>
 					<option value="Holiday">Holiday</option>
+					<option value="WorkingSun">Working Sunday</option>
 					<option value="Sunday">Sunday</option>
 				</select> <input type="hidden" id="nightStatusInput"
 					th:field="*{nightStatus}">
@@ -339,8 +341,9 @@
 						<label>Day Status</label> <select th:field="*{status}">
 							<option value="Present">Present</option>
 							<option value="Absent">Absent</option>
-							<option value="Leave">Leave</option>
+							<option value="Holiday">Holiday</option>
 							<option value="Half Day">Half Day</option>
+							<option value="WorkingSun">Working Sunday</option>
 							<option value="Sunday">Sunday</option>
 						</select>
 					</div>
@@ -611,23 +614,26 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function calculateDuration(timeIn, timeOut) {
-        if (!timeIn || !timeOut || timeIn === "00:00:00" || timeIn === "00:00") return "0 hrs 0 min";
-        
-        const startParts = timeIn.split(":");
-        const endParts = timeOut.split(":");
-        if (startParts.length < 2 || endParts.length < 2) return "0 hrs 0 min";
-        
-        const startMinutes = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
-        const endMinutes = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
-        
-        if (endMinutes <= startMinutes) return "0 hrs 0 min";
-        
-        const diffMinutes = endMinutes - startMinutes;
-        const hours = Math.floor(diffMinutes / 60);
-        const mins = diffMinutes % 60;
-        
-        return `${hours} hrs ${mins} min`;
-    }
+    	  if (!timeIn || !timeOut || timeIn === "00:00:00" || timeIn === "00:00") return "0 hrs 0 min";
+    	  
+    	  const startParts = timeIn.split(":");
+    	  const endParts = timeOut.split(":");
+    	  if (startParts.length < 2 || endParts.length < 2) return "0 hrs 0 min";
+    	  
+    	  const startMinutes = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
+    	  let endMinutes = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
+    	  
+    	  // Handles overnight/24-hour shifts when timeOut is earlier than or equal to timeIn
+    	  if (endMinutes <= startMinutes) {
+    	    endMinutes += 24 * 60; 
+    	  }
+    	  
+    	  const diffMinutes = endMinutes - startMinutes;
+    	  const hours = Math.floor(diffMinutes / 60);
+    	  const mins = diffMinutes % 60;
+    	  
+    	  return `${hours} hrs ${mins} min`;
+    	}
 
     // Function to render rows for the active page slice
     function renderTablePage() {
@@ -843,6 +849,115 @@ const apiUrl = `/timesheets/attendance-summary/export?month=${monthValue}`;
             statusMessage.style.display = "block";
             statusMessage.className = `status-message status-${type}`;
         }
+        
+        function filterStatusOptions() {
+            const dateInput = document.getElementById('todayDate').value;
+            const statusSelect = document.getElementById('statusSelect');
+            const options = statusSelect.options;
+
+            if (!dateInput) return;
+
+            // Create a date object (using UTC or local depending on your timezone needs)
+            const date = new Date(dateInput);
+            // getDay() returns 0 for Sunday, 1 for Monday, etc.
+            const isSunday = date.getDay() === 0; 
+
+            for (let i = 0; i < options.length; i++) {
+                const optionValue = options[i].value;
+
+                if (isSunday) {
+                    // If it IS Sunday, only show "Sunday" and "WorkingSun"
+                    if (optionValue === 'Sunday' || optionValue === 'WorkingSun') {
+                        options[i].style.display = 'block';
+                        options[i].disabled = false;
+                    } else {
+                        options[i].style.display = 'none';
+                        options[i].disabled = true;
+                    }
+                } else {
+                    // If it IS NOT Sunday, hide "Sunday" and "WorkingSun", show everything else
+                    if (optionValue === 'Sunday' || optionValue === 'WorkingSun') {
+                        options[i].style.display = 'none';
+                        options[i].disabled = true;
+                    } else {
+                        options[i].style.display = 'block';
+                        options[i].disabled = false;
+                    }
+                }
+            }
+
+            // Automatically adjust the selected value if the current selection becomes hidden
+            const currentSelectedOption = options[statusSelect.selectedIndex];
+            if (currentSelectedOption && currentSelectedOption.style.display === 'none') {
+                // Find the first visible option and select it
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].style.display !== 'none') {
+                        statusSelect.value = options[i].value;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Optional: Run on page load if a date is already populated by Thymeleaf
+        document.addEventListener("DOMContentLoaded", function() {
+            filterStatusOptions();
+        });
+        
+        
+        // Function to update required status of Site Name based on timeIn
+        function updateValidation() {
+            const timeIn = document.getElementById('timeIn').value;
+            const siteName = document.getElementById('userLocation');
+            const asterisk = document.getElementById('siteNameRequired');
+
+            if (timeIn && timeIn.trim() !== "") {
+                siteName.required = true;
+                asterisk.style.display = "inline";
+            } else {
+                siteName.required = false;
+                asterisk.style.display = "none";
+                siteName.classList.remove('is-invalid');
+            }
+        }
+
+        // Modify your existing setCurrentTime function to trigger validation update
+        function setCurrentTime(fieldId) {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById(fieldId).value = `${hours}:${minutes}`;
+            
+            // Trigger validation updates after setting time
+            if (fieldId === 'timeIn') {
+                updateValidation();
+            }
+        }
+
+        // Add event listener to form submission to ensure validation check passes
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeInInput = document.getElementById('timeIn');
+            
+            // Watch for direct value changes if any
+            timeInInput.addEventListener('change', updateValidation);
+
+            // Optional: Form submit handler
+            const form = timeInInput.closest('form');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    const timeIn = timeInInput.value;
+                    const siteName = document.getElementById('userLocation');
+
+                    if (timeIn && !siteName.value.trim()) {
+                        event.preventDefault();
+                        siteName.classList.add('is-invalid');
+                        alert('Please enter a Site Name.');
+                        siteName.focus();
+                    }
+                });
+            }
+        });
     </script>
 
 </html>

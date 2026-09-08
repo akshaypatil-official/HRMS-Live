@@ -43,6 +43,7 @@ public class MaterialExcelExporter {
 	        createCell(row, 5, "Quantity", style);
 	        createCell(row, 6, "Bill No", style);
 	        createCell(row, 7, "Price", style);
+	        createCell(row, 8, "Remark", style);
 	    }
 
 	    private void createCell(Row row, int columnCount, Object value, CellStyle style) {
@@ -95,6 +96,7 @@ public class MaterialExcelExporter {
 	            createCell(row, columnCount++, purchase.getQuantity(), style);
 	            createCell(row, columnCount++, purchase.getBillNo(), style);
 	            createCell(row, columnCount++, purchase.getAmt(), style);
+	            createCell(row, columnCount++, purchase.getRemark(), style);
 	        }
 	    }
 

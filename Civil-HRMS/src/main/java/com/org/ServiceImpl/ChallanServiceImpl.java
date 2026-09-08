@@ -32,11 +32,10 @@ public class ChallanServiceImpl implements ChallanService {
 	}
 	
 	
-	 @Override
-	    public List<Challans> getAllChallans() {
-	        // Fetches all rows from the database table linked to Challans entity
-	        return challansRepo.findAll();
-	    }
+	@Override
+	public List<Challans> getAllChallans() {
+	    return challansRepo.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "date"));
+	}
 
 
 	 @Override

@@ -7,11 +7,22 @@
 <link rel="stylesheet" th:href="@{/css/Header-Footer.css}">
 <link rel="stylesheet" th:href="@{/css/Challan.css}">
 
-<link rel="stylesheet"
-	href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.css" />
-<script src="https://cdn.datatables.net/2.3.8/js/dataTables.js"></script>
-<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-<script src="https://cdn.datatables.net/2.3.8/js/dataTables.js"></script>
+<!-- 1. jQuery (MUST BE FIRST) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- 2. DataTables Core CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/2.2.2/css/dataTables.dataTables.css" />
+<script src="https://cdn.datatables.net/2.2.2/js/dataTables.js"></script>
+
+<!-- 3. DataTables Buttons CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.css" />
+
+<!-- 4. JSZip (Required for Excel export) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- 5. DataTables Buttons JS -->
+<script src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.2.2/js/buttons.html5.min.js"></script>
 <meta th:name="_csrf" th:content="${_csrf.token}"/>
     <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
 <title>Purchase Management</title>
@@ -40,6 +51,7 @@
 						<a th:href="@{/purchases}">Purchase</a> <a th:href="@{/challans}">Challans</a>
 					</div></li>
 				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/material-ledger}">Materials</a></li> 
 				<li><a th:href="@{/logout}">Logout</a></li>
 			</ul>
 		</nav>
@@ -48,9 +60,7 @@
 		<!-- Purchase Entry Form -->
 		<div class="card">
 			<h2>New Challan Entry</h2>
-			<form class="challan-form" th:action="@{/challans/save}"
-				th:object="${newChallan}" method="post"
-				enctype="multipart/form-data" id="challanForm">
+			<form class="challan-form" th:action="@{/challans/save}" th:object="${newChallan}" method="post" enctype="multipart/form-data" id="challanForm">
 				<div class="row g-3">
 					<div class="col-md-6">
 						<label class="form-label fw-semibold">Date</label> <input
@@ -169,7 +179,7 @@
 					<div class="col-12">
 						<label for="photoFile3">vehicle Photo (Required):</label> <input
 							type="file" id="photoFile3" name="photoFile3"
-							class="form-control-file" accept="image/*" required /> <small
+							class="form-control-file" accept="image/*"/> <small
 							class="text-muted">Max size: 5MB</small>
 
 					</div>
@@ -290,18 +300,34 @@ $(document).ready(function() {
     $('#myTable').DataTable({
         "paging": true,          
         "searching": true,      
-        "ordering": true,      
+        "ordering": false,      
         "info": true,          
         "pageLength": 10,       
         "language": {
             "search": "Filter records:",
             "zeroRecords": "No matching challans found"
+            
         },
         "columnDefs": [
-            { "orderable": false, "targets": [13, 14, 15, 17] } 
+            { "orderable": false, "targets": [13, 14, 15] } 
+        ],
+        // Enabled Excel Export Button
+        "dom": 'Bfrtip',
+        "buttons": [
+            {
+                extend: 'excelHtml5',
+                text: 'Export to Excel',
+                className: 'btn btn-success',
+                exportOptions: {
+                    // Exports columns 0 through 12 (first 13 columns, index 0 to 12)
+                    columns: ':lt(13)' 
+                }
+            }
         ]
+        
     });
 });
+	
 
 
 $(document).ready(function() {

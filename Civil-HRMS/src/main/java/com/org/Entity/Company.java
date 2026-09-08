@@ -1,10 +1,15 @@
 package com.org.Entity;
 
+import java.util.Collection;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -17,6 +22,10 @@ public class Company {
 	@Column(nullable = false, unique = true)
 	private String name;
 
+	@OneToMany(mappedBy = "company")
+    @JsonIgnore // <-- Add this to prevent Jackson from looping back and crashing
+    private Collection<MaterialTransaction> transactions;
+	
 	// Constructors
 	public Company() {
 	}

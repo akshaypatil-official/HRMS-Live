@@ -59,7 +59,7 @@ public class AttendanceSummaryExcelExporter {
 
         String[] headers = { 
             "EMPLOYEE NAME", "COMPANY NAME", "TOTAL DAYS", "PRESENT DAYS", 
-            "ABSENT DAYS", "HALF DAY", "FULL NIGHT", "HALF NIGHT", "SUNDAY","HOLYDAYS", "TOTAL ATTENDANCE DAYS" 
+            "ABSENT DAYS", "HALF DAY", "FULL NIGHT", "HALF NIGHT", "SUNDAY","WORKING SUNDAY","HOLYDAYS", "TOTAL ATTENDANCE DAYS" 
         };
 
         for (int i = 0; i < headers.length; i++) {
@@ -136,27 +136,29 @@ public class AttendanceSummaryExcelExporter {
                 }
             }
             // -------------------------------------------------------
+            double presentDays = countStatus(rawStatus, "Present"); 
+            double absentDays = countStatus(rawStatus, "Absent"); 
+            double halfDays = countStatus(rawStatus, "Half Day"); 
+            double fullNights = countStatus(nightStatus, "Full Night"); 
+            double halfNights = countStatus(nightStatus, "Half Night"); 
+            double sundayDays = sundayCount; 
+            
+            // Check case sensitivity here if they still display 0
+            double workingSunday = countStatus(rawStatus, "WorkingSun"); 
+            double holiDays = countStatus(rawStatus, "holiDay"); 
 
-            double presentDays = countStatus(rawStatus, "Present");
-            double absentDays  = countStatus(rawStatus, "Absent");
-            double halfDays    = countStatus(rawStatus, "Half Day");
-            double holiDays    = countStatus(rawStatus, "holi Day");
-            double sundayDays  = sundayCount;
-            double fullNights  = countStatus(nightStatus, "Full Night");
-            double halfNights  = countStatus(nightStatus, "Half Night");
-
-            double totalAttendance = presentDays + (halfDays * 0.5) + fullNights + (halfNights * 0.5) + sundayDays + holiDays;
-
+            double totalAttendance = presentDays + (halfDays * 0.5) + fullNights + (halfNights * 0.5) + sundayDays + holiDays + workingSunday; 
             // Populate data fields
-            createCell(row, columnCount++, presentDays, cellStyle);     // 4. PRESENT DAYS
-            createCell(row, columnCount++, absentDays, cellStyle);       // 5. ABSENT DAYS
-            createCell(row, columnCount++, halfDays, cellStyle);         // 6. HALF DAY
-            createCell(row, columnCount++, fullNights, cellStyle);       // 7. FULL NIGHT
-            createCell(row, columnCount++, halfNights, cellStyle);       // 8. HALF NIGHT
-            createCell(row, columnCount++, sundayDays, cellStyle);       // 9. SUNDAY
-            createCell(row, columnCount++, holiDays, cellStyle); 
-            createCell(row, columnCount++, totalAttendance, cellStyle); // 10. TOTAL ATTENDANCE DAYS
-        }
+            createCell(row, columnCount++, presentDays, cellStyle);     // 4. PRESENT DAYS 
+            createCell(row, columnCount++, absentDays, cellStyle);      // 5. ABSENT DAYS 
+            createCell(row, columnCount++, halfDays, cellStyle);        // 6. HALF DAY 
+            createCell(row, columnCount++, fullNights, cellStyle);      // 7. FULL NIGHT 
+            createCell(row, columnCount++, halfNights, cellStyle);      // 8. HALF NIGHT 
+            createCell(row, columnCount++, sundayDays, cellStyle);      // 9. SUNDAY 
+            createCell(row, columnCount++, workingSunday, cellStyle);   // 10. WORKING SUNDAY 
+            createCell(row, columnCount++, holiDays, cellStyle);        // 11. HOLYDAYS 
+            createCell(row, columnCount++, totalAttendance, cellStyle); // 12. TOTAL ATTENDANCE DAYS 
+        }     
         
         // Auto-size columns चा लूप १० ऐवजी ११ करा कारण 'HOLYDAYS' चा कॉलम वाढला आहे
         for (int i = 0; i < 11; i++) {

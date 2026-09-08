@@ -15,6 +15,7 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -71,7 +72,9 @@ public class TimesheetExcelExporter {
             createCell(tableHeader, i, columns[i], headerStyle);
             sheet.setColumnWidth(i, 4000);
         }
-
+        if (listTimesheets != null) {
+            listTimesheets.sort(Comparator.comparing(Timesheet::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
         // 4. Data Rows
         int rowCount = 5;
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
@@ -94,9 +97,21 @@ public class TimesheetExcelExporter {
             createCell(row, 2, in, bodyStyle);
             createCell(row, 3, out, bodyStyle);
 
-            // Calculate Duration: 55 min vs Hrs
             long mins = calculateMinutes(ts.getTimeIn(), ts.getTimeOut());
-            String dur = (mins < 60) ? mins + " min" : String.format("%.2f hrs", mins / 60.0);
+            String dur;
+
+            if (mins < 60) {
+                dur = mins + " min";
+            } else {
+                long hrs = mins / 60;
+                long remainingMins = mins % 60;
+                
+                if (remainingMins == 0) {
+                    dur = hrs + " hr";
+                } else {
+                    dur = hrs + " hr " + remainingMins + " min";
+                }
+            }
             
             createCell(row, 4, dur, bodyStyle);
             createCell(row, 5, ts.getStatus(), bodyStyle);
@@ -104,7 +119,7 @@ public class TimesheetExcelExporter {
         }
 
         int totalAbsent = 0, totalAttended = 0, totalHalfDay = 0, totalFullNight = 0;
-        int totalHalfNight = 0, totalSunday = 0, totalHoliday = 0;
+        int totalHalfNight = 0, totalSunday = 0, totalWorkingSunday = 0, totalHoliday = 0;
 
         // 2. Dynamically calculate Sundays ONLY up to today's date
         LocalDate today = LocalDate.now();
@@ -147,7 +162,8 @@ public class TimesheetExcelExporter {
                     case "PRESENT": case "P": totalAttended++; break;
                     case "ABSENT":  case "A": totalAbsent++; break;
                     case "HALF DAY":          totalHalfDay++; break;
-                    case "SUNDAY":            totalSunday++; break; 
+                    case "SUNDAY":            totalSunday++; break;
+                    case "WORKINGSUN":    totalWorkingSunday++; break;
                     case "HOLIDAY":           totalHoliday++; break;
                 }
             }
@@ -165,12 +181,12 @@ public class TimesheetExcelExporter {
         int footerStart = rowCount + 2;
 
         // Formula adds only the Sundays passed up to today into total attendance
-        double totalAttendanceDays = totalAttended + sundayCount + (totalFullNight * 1.0) + (totalHalfNight * 0.5) + (totalHalfDay * 0.5);
+        double totalAttendanceDays = totalAttended + sundayCount + (totalFullNight * 1.0) + (totalHalfNight * 0.5) + (totalHalfDay * 0.5) + (totalWorkingSunday * 1.0) + (totalHoliday * 1.0); 
 
         // 5. Generate Footer Rows
-        String[] footerLabels = {"TOTAL DAYS", "ABSENT", "ATTENDED", "HALF DAY", "FULL NIGHT", "HALF NIGHT", "SUNDAY", "HOLIDAY", "TOTAL ATTENDANCE DAYS"};
+        String[] footerLabels = {"TOTAL DAYS", "ABSENT", "ATTENDED", "HALF DAY", "FULL NIGHT", "HALF NIGHT", "SUNDAY","WORKING SUNDAY", "HOLIDAY", "TOTAL ATTENDANCE DAYS"};
         // Displays sundaysTillToday in the "SUNDAY" row of your footer
-        Object[] footerValues = {daysInMonth, totalAbsent, totalAttended, totalHalfDay, totalFullNight, totalHalfNight, sundayCount, totalHoliday, totalAttendanceDays};
+        Object[] footerValues = {daysInMonth, totalAbsent, totalAttended, totalHalfDay, totalFullNight, totalHalfNight, sundayCount, totalWorkingSunday, totalHoliday, totalAttendanceDays};
         
         for (int i = 0; i < footerLabels.length; i++) {
             Row footerRow = sheet.createRow(footerStart + i);

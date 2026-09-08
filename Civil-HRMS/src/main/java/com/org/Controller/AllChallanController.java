@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.org.Entity.Challans;
 import com.org.Service.ChallanService;
@@ -37,19 +38,32 @@ public class AllChallanController {
 	        return "Challans"; 
 	    }
 	
-	@PostMapping("/save")
-    public String saveChallan(@ModelAttribute("newChallan") Challans challan,
-    		@RequestParam("photoFile1") MultipartFile photoFile1, 
-    	    @RequestParam("photoFile2") MultipartFile photoFile2,
-    	    @RequestParam("photoFile3") MultipartFile photoFile3,
-    	    Principal principal) {
-		 if (principal == null) {
-		        return "redirect:/login"; 
-		    }
-		    
-        challanService.saveChallan(challan, photoFile1, photoFile2, photoFile3,principal.getName()); 
-        return "redirect:/challans"; 	
-    }
+	    @PostMapping("/save")
+	    public String saveChallan(
+	        @ModelAttribute("newChallan") Challans challan, 
+	        @RequestParam(value = "photoFile1", required = false) MultipartFile photoFile1, 
+	        @RequestParam(value = "photoFile2", required = false) MultipartFile photoFile2, 
+	        @RequestParam(value = "photoFile3", required = false) MultipartFile photoFile3, 
+	        Principal principal,
+	        RedirectAttributes redirectAttributes) { // Used to pass error messages to the view
+
+	        if (principal == null) {
+	            return "redirect:/login";
+	        }
+
+	        try {
+	            challanService.saveChallan(challan, photoFile1, photoFile2, photoFile3, principal.getName());
+	            return "redirect:/challans";
+	        } catch (Exception e) {
+	            // Print the actual error to your IDE console log
+	            e.printStackTrace(); 
+	            
+	            // Pass the error message back to the UI
+	            redirectAttributes.addFlashAttribute("errorMessage", "Error saving challan: " + e.getMessage());
+	            return "redirect:/challans?error"; 
+	        }
+	    }
+
 	
 	@DeleteMapping("/delete/{id}")
 	@ResponseBody 

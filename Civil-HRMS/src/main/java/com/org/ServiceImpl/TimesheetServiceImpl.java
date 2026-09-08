@@ -106,18 +106,23 @@ public class TimesheetServiceImpl implements TimesheetService{
                  LocalDate lastSavedDate = latestEntry.getDate();
                  long missingDays = ChronoUnit.DAYS.between(lastSavedDate, today);
 
-                 if (missingDays > 1) {
-                     for (int i = 1; i < missingDays; i++) {
-                         LocalDate gapDate = lastSavedDate.plusDays(i);
-                         
-                         Timesheet absentRecord = new Timesheet();
-                         absentRecord.setUser(user);
-                         absentRecord.setDate(gapDate);
-                         absentRecord.setStatus("Absent");
-           
-                         timesheetRepo.save(absentRecord);
-                     }
-                 }
+                 if (missingDays > 15) { 
+              	   
+             	    List<Timesheet> absentRecords = new ArrayList<>();
+
+             	    for (int i = 1; i < missingDays; i++) { 
+             	        LocalDate gapDate = lastSavedDate.plusDays(i); 
+             	        Timesheet absentRecord = new Timesheet(); 
+             	        absentRecord.setUser(user); 
+             	        absentRecord.setDate(gapDate); 
+             	        absentRecord.setStatus("Absent"); 
+             	      
+             	        absentRecords.add(absentRecord);
+             	    } 
+             	    
+             	    timesheetRepo.saveAll(absentRecords); 
+             	}
+       
              }
          }
 
@@ -129,16 +134,26 @@ public class TimesheetServiceImpl implements TimesheetService{
                  existingRecord.setTimeOut(timesheet.getTimeOut());
                  existingRecord.setOutPhoto(timesheet.getOutPhoto());
 
-                 // --- DIRECT COMPARISON (No parsing needed) ---
-                 java.time.LocalTime deadline = java.time.LocalTime.of(15, 0); // 3:00 PM
+                 // --- SHIFT STATUS LOGIC ---
+                 java.time.LocalTime checkout = timesheet.getTimeOut();
+                 java.time.LocalTime deadline3PM = java.time.LocalTime.of(15, 0); // 3:00 PM
+                 java.time.LocalTime nightStart = java.time.LocalTime.of(23, 0);  // 11:00 PM
+                 java.time.LocalTime nightEnd = java.time.LocalTime.of(1, 0);     // 1:00 AM
 
-                 if (timesheet.getTimeOut().isBefore(deadline)) {
+                 // Check if checkout is between 11:00 PM and 1:00 AM (Half Night)
+                 boolean isHalfNight = checkout.isAfter(nightStart.minusMinutes(1)) || checkout.isBefore(nightEnd.plusMinutes(1));
+                 // Check if checkout is after 1:00 AM but before early morning (Full Night)
+                 boolean isFullNight = checkout.isAfter(nightEnd) && checkout.isBefore(java.time.LocalTime.of(6, 0));
+
+                 if (isHalfNight) {
+                     existingRecord.setNightStatus("half night");
+                 } else if (isFullNight) {
+                     existingRecord.setNightStatus("full night");
+                 } else if (checkout.isBefore(deadline3PM)) {
                      existingRecord.setStatus("Half Day");
-                 } else {
-                     existingRecord.setStatus("Present"); // Keeps it Present if 3 PM or later
-                 }
-                 // ----------------------------------------------
+                 } 
              }
+             
              if (timesheet.getNightTimeOut() != null) {
                  existingRecord.setNightTimeOut(timesheet.getNightTimeOut());
                  existingRecord.setNightStatus(timesheet.getNightStatus()); 
@@ -173,6 +188,8 @@ public class TimesheetServiceImpl implements TimesheetService{
              timesheetRepo.save(timesheet);
          }
      }
+
+     
 		@Override
 		public List<Timesheet> findAll() {
 			// TODO Auto-generated method stub

@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.org.Entity.Timesheet;
+import com.org.Entity.User;
 import com.org.Repository.UserRepository;
 import com.org.Repository.dashBoardRepository;
 import com.org.Service.dashBoardService;
@@ -50,4 +51,9 @@ public class dashBoardServiceImpl implements dashBoardService{
 	        return totalUsers - activeUsers;
 	    }
 
+	    @Override
+	    public List<User> getAllUsers() {
+	        
+	        return userRepo.findAll(); 
+	    }
 }

@@ -37,6 +37,7 @@
 						<a th:href="@{/purchases}">Purchase</a> <a th:href="@{/challans}">Challans</a>
 					</div></li>
 				<li><a th:href="@{/labourRecords}">Labour Entries</a></li>
+				<li><a th:href="@{/material-ledger}">Materials</a></li> 
 				<li><a th:href="@{/logout}">Logout</a></li>
 			</ul>
 		</nav>
@@ -158,6 +159,7 @@
 							<th>Amount</th>
 							<th>InvoicePhoto</th>
 							<th>MaterialPhoto</th>
+							<th>Remark</th>
 							<th sec:authorize="hasAnyAuthority('admin', 'manager')">Action</th>
 						</tr>
 					</thead>
@@ -198,6 +200,7 @@
         View Photo
     </button>
 </td>
+<td th:text="${item.remark}"></td>
 <td sec:authorize="hasAnyAuthority('admin', 'manager')">
     <button type="button" 
             th:onclick="deletePurchase([[${item.p_Id}]], this)" 
@@ -242,12 +245,12 @@
 $(document).ready(function () {
     $('#myTable').DataTable({
         "paging": true,      
-        "ordering": true,    
+        "ordering": false,    
         "columnDefs": [
             { 
                 // Disables sorting on InvoicePhoto (11), MaterialPhoto (12), and Action (13)
                 "orderable": false, 
-                "targets": [11, 12, 13] 
+                "targets": [11, 12] 
             }
         ]
     });
