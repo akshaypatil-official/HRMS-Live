@@ -184,17 +184,30 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Challan / Gate Pass Reference</label>
-                        <input type="text" id="txChallan" placeholder="CH-9011" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end"> 
+  <!-- Challan Field (Takes 1 column out of 4) -->
+  <div class="sm:col-span-1"> 
+    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Challan / Gate Pass Reference</label> 
+    <input type="text" id="txChallan" placeholder="CH-9011" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"> 
+  </div> 
 
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Remarks / Audit Log Notes</label>
-                        <input type="text" id="txRemarks" placeholder="Dispatched under site structural allocation rule sets" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
-                    </div>
-                </div>
+  <!-- Remarks Field (Takes 2 columns out of 4) -->
+  <div class="sm:col-span-2"> 
+    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Remarks / Audit Log Notes</label> 
+    <input type="text" id="txRemarks" placeholder="Dispatched under site structural allocation rule sets" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"> 
+  </div> 
+
+  <!-- Normal Image Upload Field (Takes 1 column out of 4) -->
+  <div class="sm:col-span-1">
+    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">Upload Image File</label>
+    <input type="file" id="fiImage" accept="image/*" class="w-full bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-500
+      file:mr-4 file:py-2 file:px-4
+      file:rounded-l-lg file:border-0
+      file:text-sm file:font-semibold
+      file:bg-slate-200 file:text-slate-700
+      hover:file:bg-slate-300 transition-colors file:cursor-pointer cursor-pointer">
+  </div>
+</div>
 
                 <div class="pt-2 flex justify-end">
                     <button type="submit" class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg shadow-md transition-all">
@@ -264,6 +277,7 @@
                 <table id="logTable" class="w-full text-left border-collapse min-w-[950px]">
                     <thead>
                         <tr class="bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                            <th class="py-3 px-4">Emp Name</th>
                             <th class="py-3 px-4">Date</th>
                             <th class="py-3 px-4">Challan Ref No</th>
                             <th class="py-3 px-4">Material Model</th>
@@ -272,12 +286,28 @@
                             <th class="py-3 px-4">Target Entity (To)</th>
                             <th class="py-3 px-4 text-right">Registered Qty</th>
                             <th class="py-3 px-4 text-right">Remark</th>
+                            <th class="py-3 px-4 text-right">Photo</th>
                             <th class="py-3 px-4 text-center" >Actions</th>
                         </tr>
                     </thead>
                     <tbody id="logTableBody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
                 </table>
-            </div>
+            </div><div id="photoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+           <div class="relative bg-white rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col p-4">
+        
+        <!-- Modal Header / Close Button Row -->
+        <div class="flex justify-between items-center pb-2 border-b mb-3">
+            <h3 class="text-lg font-bold text-gray-900">Material Photo</h3>
+            <button onclick="closePhotoModal()" class="text-gray-500 hover:text-gray-800 font-extrabold text-2xl focus:outline-none">&times;</button>
+        </div>
+        
+        <!-- Image Area -->
+        <div class="overflow-auto flex justify-center items-center">
+            <img id="modalImage" src="" alt="Transaction Material" class="max-w-full max-h-[70vh] object-contain rounded">
+        </div>
+        
+    </div>
+</div>
         </section> 
     </main>
 
@@ -575,76 +605,103 @@ function syncPrepopulateSelectors() {
             }
         }
 
-        async function fetchTransactionHistory() {
-            const historyContainer = document.getElementById('logTableBody');
-            
-            // 1. Destroy any existing DataTable instance
+        function fetchTransactionHistory() {
+            // १. जर आधीच DataTable असेल तर ते पूर्णपणे नष्ट करा
             if ($.fn.DataTable.isDataTable('#logTable')) {
                 $('#logTable').DataTable().destroy();
             }
 
-            try {
-                const response = await fetch(`${BACKEND_API_URL}/history`);
-                if (!response.ok) throw new Error("Log ledger request fetch mapping error.");
+            // २. DataTables चे Server-side Processing सुरू करा
+            $('#logTable').DataTable({
+                processing: true,
+                serverSide: true, // बॅकएंडवरून पेजिनेशन करण्यासाठी हे आवश्यक आहे
+                searching: false,
+                lengthChange: false,
+                pageLength: 10,
+                ordering: false,
                 
-                cachedTransactionsList = await response.json();
-                historyContainer.innerHTML = "";
+                // DataTables ची अधिकृत AJAX पद्धत
+                ajax: {
+                    url: `${BACKEND_API_URL}/history`,
+                    type: 'GET',
+                    data: function (d) {
+                        // DataTables चे पॅरामीटर्स आपल्या Spring Boot च्या 'page' आणि 'size' मध्ये मॅप करा
+                        return {
+                            page: d.start / d.length,
+                            size: d.length
+                        };
+                    },
+                    dataSrc: function (json) {
+                        // जागतिक व्हेरिएबलमध्ये डेटा सेव्ह करा (इतर कामांसाठी)
+                        cachedTransactionsList = json.content || []; 
 
-                if (cachedTransactionsList.length === 0) {
-                    historyContainer.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 font-medium">Database repository index is currently blank.</td></tr>`;
-                    return;
+                        let formattedRowsData = [];
+
+                        cachedTransactionsList.forEach(tx => {
+                            let typeBadgeFormatting = "bg-slate-100 text-slate-800 border-slate-200";
+                            if (tx.type === 'TRANSFER') typeBadgeFormatting = "bg-amber-100 text-amber-800 border-amber-200";
+                            if (tx.type === 'INWARD') typeBadgeFormatting = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                            if (tx.type === 'CONSUMPTION') typeBadgeFormatting = "bg-rose-100 text-rose-800 border-rose-200";
+                            if (tx.type === 'SCRAP') typeBadgeFormatting = "bg-slate-100 text-slate-800 border-slate-200";
+                            
+                            const deleteActionHtml = IS_ADMIN ? `
+                                <button onclick="executeDeleteRecord('${tx.id}')" class="text-slate-400 hover:text-rose-600 transition-colors p-1" title="Delete ledger item">
+                                    <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            ` : `<span class="text-slate-300 text-xs">-</span>`;
+
+                            // प्रत्येक कॉलमचा डेटा ॲरे स्वरूपात टाका
+                            formattedRowsData.push([
+                            	`<span class="font-extrabold text-slate-900">
+                                ${tx.user ? (tx.user.name || tx.user.firstName || 'N/A') : 'System'}
+                            </span>`,
+                                `<span class="font-semibold text-slate-500 whitespace-nowrap">${tx.date || ''}</span>`,
+                                `<span class="font-mono font-bold text-slate-700 tracking-wider">${tx.challanRef || ''}</span>`,
+                                `<span class="font-bold text-slate-900">${tx.materialSku || ''}</span>`,
+                                `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border tracking-wide ${typeBadgeFormatting}">${tx.type || ''}</span>`,
+                                `<span class="font-medium text-slate-600 truncate max-w-[160px]" title="${tx.sourceLocation || ''}">${tx.sourceLocation || ''}</span>`,
+                                `<span class="font-medium text-slate-600 truncate max-w-[160px]" title="${tx.destinationLocation || ''}">${tx.destinationLocation || ''}</span>`,
+                                `<span class="font-extrabold text-slate-900">${tx.quantity ? Number(tx.quantity).toLocaleString() : 0}</span>`,
+                                `<span class="font-extrabold text-slate-900">${tx.remarks || ''}</span>`,
+                                `<span class="font-extrabold text-slate-900">
+                                ${tx.materialPhoto ? `
+                                    <button onclick="openPhotoModal('${tx.materialPhoto.replace(/\\/g, '/')}')" class="text-blue-600 hover:text-blue-800 underline focus:outline-none">
+                                        View Photo
+                                    </button>
+                                ` : 'No Photo'}
+                            </span>`,
+                                deleteActionHtml
+                            ]);
+                        });
+
+                        // Spring Boot च्या 'totalElements' ला DataTables च्या फॉरमॅटमध्ये बदला
+                        json.recordsTotal = json.totalElements;
+                        json.recordsFiltered = json.totalElements;
+
+                        return formattedRowsData; // हा डेटा थेट टेबलमध्ये जाईल
+                    },
+                    error: function (xhr, error, thrown) {
+                        console.error("AJAX Error: ", error);
+                        document.getElementById('logTableBody').innerHTML = `<tr><td colspan="9" class="p-8 text-center text-rose-500 font-semibold bg-rose-50/50">Failed to render active transactional audit records view grid.</td></tr>`;
+                    }
+                },
+                // स्टाईलिंग आणि अलाईन्मेंट टिकवून ठेवण्यासाठी क्लास मॅपिंग
+                createdRow: function (row, data, dataIndex) {
+                    $(row).addClass('hover:bg-slate-50 transition-colors text-xs');
+                    $('td', row).eq(0).addClass('py-3.5 px-4'); // Emp Name
+                    $('td', row).eq(1).addClass('py-3.5 px-4');  // Date
+                    $('td', row).eq(2).addClass('py-3.5 px-4'); // Challan
+                    $('td', row).eq(3).addClass('py-3.5 px-4'); // Material
+                    $('td', row).eq(4).addClass('py-3.5 px-4'); // Variant
+                    $('td', row).eq(5).addClass('py-3.5 px-4'); // Origin
+                    $('td', row).eq(6).addClass('py-3.5 px-4'); // Target
+                    $('td', row).eq(7).addClass('py-3.5 px-4 text-center'); // Registered Qty
+                    $('td', row).eq(8).addClass('py-3.5 px-4 text-right');  // Remark
+                    $('td', row).eq(9).addClass('py-3.5 px-4 text-right'); //photo
+                    $('td', row).eq(10).addClass('py-3.5 px-4 text-center'); // Actions
                 }
-
-                let tableRowsHtml = "";
-                cachedTransactionsList.forEach(tx => {
-                    let typeBadgeFormatting = "bg-slate-100 text-slate-800 border-slate-200";
-                    if (tx.type === 'TRANSFER') typeBadgeFormatting = "bg-amber-100 text-amber-800 border-amber-200";
-                    if (tx.type === 'INWARD') typeBadgeFormatting = "bg-emerald-100 text-emerald-800 border-emerald-200";
-                    if (tx.type === 'CONSUMPTION') typeBadgeFormatting = "bg-rose-100 text-rose-800 border-rose-200";
-                    if (tx.type === 'SCRAP') typeBadgeFormatting = "bg-slate-100 text-slate-800 border-slate-200";
-                    // Use the IS_ADMIN variable initialized by Thymeleaf
-                    const deleteActionHtml = IS_ADMIN ? `
-                        <button onclick="executeDeleteRecord('${tx.id}')" class="text-slate-400 hover:text-rose-600 transition-colors p-1" title="Delete ledger item">
-                            <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    ` : `<span class="text-slate-300 text-xs">-</span>`;
-
-                    tableRowsHtml += `
-                        <tr class="hover:bg-slate-50 transition-colors text-xs">
-                            <td class="py-3.5 px-4 font-semibold text-slate-500 whitespace-nowrap">${tx.date}</td>
-                            <td class="py-3.5 px-4 font-mono font-bold text-slate-700 tracking-wider">${tx.challanRef}</td>
-                            <td class="py-3.5 px-4 font-bold text-slate-900">${tx.materialSku}</td>
-                            <td class="py-3.5 px-4">
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border tracking-wide ${typeBadgeFormatting}">${tx.type}</span>
-                            </td>
-                            <td class="py-3.5 px-4 font-medium text-slate-600 truncate max-w-[160px]" title="${tx.sourceLocation}">${tx.sourceLocation}</td>
-                            <td class="py-3.5 px-4 font-medium text-slate-600 truncate max-w-[160px]" title="${tx.destinationLocation}">${tx.destinationLocation}</td>
-                            <td class="py-3.5 px-4 text-center font-extrabold text-slate-900">${Number(tx.quantity).toLocaleString()}</td>
-                            <td class="py-3.5 px-4 text-right font-extrabold text-slate-900">${tx.remarks}</td>
-                            <td class="py-3.5 px-4 text-center">
-                                ${deleteActionHtml}
-                            </td>
-                        </tr>`;
-                });
-
-                historyContainer.innerHTML = tableRowsHtml;
-
-                // 2. Re-initialize DataTables
-                $('#logTable').DataTable({
-                    paging: true,
-                    searching: false,
-                    lengthChange: false,
-                    pageLength: 10,
-                    ordering: false,
-                    destroy: true
-                });
-
-            } catch (error) {
-                console.error(error);
-                historyContainer.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-rose-500 font-semibold bg-rose-50/50">Failed to render active transactional audit records view grid.</td></tr>`;
-            }
+            });
         }
-
 
         async function handleFormSubmit(event) {
             event.preventDefault();
@@ -673,46 +730,61 @@ function syncPrepopulateSelectors() {
 
             // पेलोड ऑब्जेक्ट तयार करा
             const payloadObject = {
-                date: document.getElementById('txDate').value,
-                type: pipelineType,
-                materialSku: document.getElementById('txMaterial').value,
-                quantity: parseFloat(document.getElementById('txQuantity').value),
-                challanRef: document.getElementById('txChallan').value.trim(),
-                sourceLocation: finalSourceLocation,          // अट पूर्ण झालेली व्हॅल्यू इथे जाईल
-                destinationLocation: finalDestinationLocation, // अट पूर्ण झालेली व्हॅल्यू इथे जाईल
-                remarks: document.getElementById('txRemarks').value.trim()
-            };
-
-            try {
-                const response = await fetch(`${BACKEND_API_URL}/transaction`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payloadObject)
-                });
-
-                if (response.ok) {
-                    displaySystemAlert("Post Successful", "Material ledger line recorded into database.", "success");
-                    document.getElementById('ledgerForm').reset();
-                    document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
-                    
-                    // रीसेट झाल्यावर नवीन फील्ड्स पुन्हा योग्य प्रकारे लपवण्यासाठी
-                    if (document.getElementById('txVendor')) document.getElementById('txVendor').value = "";
-                    if (document.getElementById('txConsumptionTarget')) document.getElementById('txConsumptionTarget').value = "";
-                    
-                    syncPrepopulateSelectors();
-                    adaptFormLabels();
-                    triggerDashboardUpdateCycle();
-                } else {
-                    const textErrorMessage = await response.text();
-                    displaySystemAlert("Insertion Refused", textErrorMessage, "error");
+                    date: document.getElementById('txDate').value,
+                    type: pipelineType,
+                    materialSku: document.getElementById('txMaterial').value,
+                    quantity: parseFloat(document.getElementById('txQuantity').value),
+                    challanRef: document.getElementById('txChallan').value.trim(),
+                    sourceLocation: finalSourceLocation,
+                    destinationLocation: finalDestinationLocation,
+                    remarks: document.getElementById('txRemarks').value.trim()
+                };
+                
+                // --- MULTIPART FORM DATA HANDLING ---
+                const formData = new FormData();
+                
+                // Append the JSON payload as a text/blob part
+                formData.append(
+                    "transaction", 
+                    new Blob([JSON.stringify(payloadObject)], { type: "application/json" })
+                );
+                
+                // Append the image file if selected
+                const imageInput = document.getElementById('fiImage');
+                if (imageInput && imageInput.files.length > 0) {
+                    formData.append("image", imageInput.files[0]);
                 }
-            } catch (error) {
-                console.error(error);
-                displaySystemAlert("Network Failure", "Unable to communicate with the Spring Boot server controller runtime configurations.", "error");
+                
+                try {
+                    // NOTE: Do NOT explicitly set 'Content-Type' header here. 
+                    // The browser automatically sets it with the required multi-part boundary.
+                    const response = await fetch(`${BACKEND_API_URL}/transaction`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        displaySystemAlert("Post Successful", "Material ledger line recorded into database.", "success");
+                        
+                        document.getElementById('ledgerForm').reset();
+                        document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+                        
+                        if (document.getElementById('txVendor')) document.getElementById('txVendor').value = "";
+                        if (document.getElementById('txConsumptionTarget')) document.getElementById('txConsumptionTarget').value = "";
+                        
+                        syncPrepopulateSelectors();
+                        adaptFormLabels();
+                        triggerDashboardUpdateCycle();
+                    } else {
+                        const textErrorMessage = await response.text();
+                        displaySystemAlert("Insertion Refused", textErrorMessage, "error");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    displaySystemAlert("Network Failure", "Unable to communicate with the Spring Boot server controller runtime configurations.", "error");
+                }
             }
-        }
+     
         async function executeDeleteRecord(transactionId) {
             if (!confirm("Are you sure you want to permanently erase this transaction record line item?")) return;
             
@@ -782,6 +854,32 @@ function syncPrepopulateSelectors() {
    
     const IS_ADMIN = /*[[${#authorization.expression("hasAnyAuthority('admin')")}]]*/ false;
  
+    function viewPhoto(photoPath) {
+        if (!photoPath) return;
+        
+        // Normalise backslashes if your Java server saved a Windows path (e.g., uploads\transactions\)
+        const webPath = photoPath.replace(/\\/g, '/');
+        
+        // Open the image file route in a new tab
+        window.open(`/${webPath}`, '_blank');
+    }
+    function openPhotoModal(photoPath) {
+        if (!photoPath) return;
+        
+        // Set the image src to point to your backend image file path location
+        document.getElementById('modalImage').src = '/' + photoPath;
+        
+        // Remove the 'hidden' class to display the overlay element instantly
+        document.getElementById('photoModal').classList.remove('hidden');
+    }
+
+    function closePhotoModal() {
+        // Hide the modal structure
+        document.getElementById('photoModal').classList.add('hidden');
+        
+        // Clear out the src path to save browser memory while closed
+        document.getElementById('modalImage').src = '';
+    }
 </script>
 </body>
 </html>

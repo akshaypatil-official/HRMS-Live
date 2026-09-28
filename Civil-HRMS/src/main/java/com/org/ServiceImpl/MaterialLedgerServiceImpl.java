@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.org.DTO.SiteBalanceReport;
 import com.org.Entity.MaterialSku;
@@ -39,12 +41,13 @@ public class MaterialLedgerServiceImpl implements MaterialLedgerService{
         txRepository.save(transaction);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<MaterialTransaction> getAllTransactions() {
-        return txRepository.findAllByOrderByDateDesc();
-    }
-
+	/*
+	 * @Override
+	 * 
+	 * @Transactional(readOnly = true) public List<MaterialTransaction>
+	 * getAllTransactions() { return txRepository.findAllByOrderByDateDesc(); }
+	 */
+    
     @Override
     @Transactional(readOnly = true)
     public List<SiteBalanceReport> computeBalancesMatrix(String materialSku) {
@@ -132,6 +135,9 @@ public class MaterialLedgerServiceImpl implements MaterialLedgerService{
             // Returns false if frontend accidentally sends a non-numeric string
             return false; 
         }
+    }
+    public Page<MaterialTransaction> getAllTransactions(Pageable pageable) {
+        return txRepository.findAllByOrderByDateDesc(pageable); 
     }
 }
 

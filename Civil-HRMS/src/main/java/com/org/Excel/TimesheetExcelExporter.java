@@ -126,37 +126,39 @@ public class TimesheetExcelExporter {
         YearMonth reportMonth = YearMonth.parse(selectedMonth);
 
         int daysInMonth = reportMonth.lengthOfMonth();
-        
         int sundayCount = 0;
 
         if (reportMonth.equals(YearMonth.now())) {
-
             int lastDay = today.getDayOfMonth();
-
             for (int day = 1; day <= lastDay; day++) {
                 if (reportMonth.atDay(day).getDayOfWeek() == DayOfWeek.SUNDAY) {
                     sundayCount++;
                 }
             }
-
         } else {
-
             for (int day = 1; day <= reportMonth.lengthOfMonth(); day++) {
                 if (reportMonth.atDay(day).getDayOfWeek() == DayOfWeek.SUNDAY) {
                     sundayCount++;
                 }
             }
-
         }
+
+        // --- NEW: Define Styles with background colors matching your image ---
+        // Format: createStyle(bold, size, border, rgbColorBytes)
+        CellStyle absentStyle = createStyle(false, 11, true, new byte[]{(byte)255, (byte)0, (byte)0});        // Red
+        CellStyle sundayStyle = createStyle(false, 11, true, new byte[]{(byte)255, (byte)255, (byte)0});    // Yellow
+        CellStyle holidayStyle = createStyle(false, 11, true, new byte[]{(byte)100, (byte)200, (byte)100});  // Green
+        CellStyle baseBodyStyle = createStyle(false, 11, true, null);                                       // White/Normal
 
         // 3. Loop through data rows (Row 1 to rowCount)
         for (int r = 1; r <= rowCount; r++) {
             Row dataRow = sheet.getRow(r);
             if (dataRow == null) continue;
             
+            String status = "";
             Cell statusCell = dataRow.getCell(5); 
             if (statusCell != null) {
-                String status = statusCell.getStringCellValue().toUpperCase().trim();
+                status = statusCell.getStringCellValue().toUpperCase().trim();
                 
                 switch (status) {
                     case "PRESENT": case "P": totalAttended++; break;
@@ -175,6 +177,25 @@ public class TimesheetExcelExporter {
                     case "HALF NIGHT": totalHalfNight++; break;
                 }
             }
+
+            // --- NEW: Choose row background style based on status ---
+            CellStyle rowStyle = baseBodyStyle;
+            if (status.equals("ABSENT") || status.equals("A")) {
+                rowStyle = absentStyle;
+            } else if (status.equals("SUNDAY")) {
+                rowStyle = sundayStyle;
+            } else if (status.equals("HOLIDAY")) {
+                rowStyle = holidayStyle;
+            }
+
+            // --- NEW: Apply the chosen style to all 7 columns in this row ---
+            for (int col = 0; col <= 6; col++) {
+                Cell cell = dataRow.getCell(col);
+                if (cell == null) {
+                    cell = dataRow.createCell(col);
+                }
+                cell.setCellStyle(rowStyle);
+            }
         }
 
         // 4. Prepare Footer Calculation
@@ -185,13 +206,25 @@ public class TimesheetExcelExporter {
 
         // 5. Generate Footer Rows
         String[] footerLabels = {"TOTAL DAYS", "ABSENT", "ATTENDED", "HALF DAY", "FULL NIGHT", "HALF NIGHT", "SUNDAY","WORKING SUNDAY", "HOLIDAY", "TOTAL ATTENDANCE DAYS"};
-        // Displays sundaysTillToday in the "SUNDAY" row of your footer
         Object[] footerValues = {daysInMonth, totalAbsent, totalAttended, totalHalfDay, totalFullNight, totalHalfNight, sundayCount, totalWorkingSunday, totalHoliday, totalAttendanceDays};
         
         for (int i = 0; i < footerLabels.length; i++) {
             Row footerRow = sheet.createRow(footerStart + i);
+            
+            // --- NEW: Check footer label to color summary metrics ---
+            CellStyle currentFooterValueStyle = bodyStyle; 
+            String label = footerLabels[i];
+            
+            if (label.equals("ABSENT")) {
+                currentFooterValueStyle = absentStyle;
+            } else if (label.equals("SUNDAY")) {
+                currentFooterValueStyle = sundayStyle;
+            } else if (label.equals("HOLIDAY")) {
+                currentFooterValueStyle = holidayStyle;
+            }
+
             createCell(footerRow, 4, footerLabels[i], headerStyle);
-            createCell(footerRow, 5, String.valueOf(footerValues[i]), bodyStyle);
+            createCell(footerRow, 5, String.valueOf(footerValues[i]), currentFooterValueStyle);
         }
 
         // 6. Finalize and Write
@@ -200,6 +233,7 @@ public class TimesheetExcelExporter {
         workbook.close();
         outputStream.close();
     }
+
     // FIXED: Now accepts LocalDate to prevent "not applicable" error
     private String getDayFromDate(LocalDate date) {
         if (date == null) return "";
@@ -210,18 +244,31 @@ public class TimesheetExcelExporter {
         }
     }
 
+    // --- UPDATED: Overloaded createStyle to support RGB background colors ---
     private CellStyle createStyle(boolean bold, int size, boolean border) {
+        return createStyle(bold, size, border, null);
+    }
+
+    private CellStyle createStyle(boolean bold, int size, boolean border, byte[] rgbColor) {
         CellStyle style = workbook.createCellStyle();
         XSSFFont font = workbook.createFont();
         font.setBold(bold);
         font.setFontHeightInPoints((short) size);
         style.setFont(font);
+        
         if (border) {
             style.setBorderBottom(BorderStyle.THIN);
             style.setBorderLeft(BorderStyle.THIN);
             style.setBorderRight(BorderStyle.THIN);
             style.setBorderTop(BorderStyle.THIN);
         }
+
+        if (rgbColor != null) {
+            XSSFColor customColor = new XSSFColor(rgbColor, null);
+            ((XSSFCellStyle) style).setFillForegroundColor(customColor);
+            style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        }
+
         style.setAlignment(HorizontalAlignment.CENTER);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
         return style;

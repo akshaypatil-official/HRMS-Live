@@ -98,7 +98,7 @@ public class TimesheetServiceImpl implements TimesheetService{
 
          // 2. AUTO-ABSENT LOGIC: Only trigger this during Morning Check-In (when no entry exists for today)
          List<Timesheet> existingRows = timesheetRepo.findByUserAndDate(user, today);
-         
+
          if (existingRows.isEmpty()) {
              Timesheet latestEntry = timesheetRepo.findTopByUserOrderByDateDesc(user);
              
@@ -106,23 +106,23 @@ public class TimesheetServiceImpl implements TimesheetService{
                  LocalDate lastSavedDate = latestEntry.getDate();
                  long missingDays = ChronoUnit.DAYS.between(lastSavedDate, today);
 
-                 if (missingDays > 15) { 
-              	   
-             	    List<Timesheet> absentRecords = new ArrayList<>();
+                 // बदल: १५ ऐवजी > १ केले आहे, जेणेकरून १ ते १५ किंवा त्यापेक्षा जास्त दिवसांच्या गॅपसाठी हे चालेल
+                 if (missingDays > 1) { 
+                	   
+                	    List<Timesheet> absentRecords = new ArrayList<>();
 
-             	    for (int i = 1; i < missingDays; i++) { 
-             	        LocalDate gapDate = lastSavedDate.plusDays(i); 
-             	        Timesheet absentRecord = new Timesheet(); 
-             	        absentRecord.setUser(user); 
-             	        absentRecord.setDate(gapDate); 
-             	        absentRecord.setStatus("Absent"); 
-             	      
-             	        absentRecords.add(absentRecord);
-             	    } 
-             	    
-             	    timesheetRepo.saveAll(absentRecords); 
-             	}
-       
+                	    for (int i = 1; i < missingDays; i++) { 
+                	        LocalDate gapDate = lastSavedDate.plusDays(i); 
+                	        Timesheet absentRecord = new Timesheet(); 
+                	        absentRecord.setUser(user); 
+                	        absentRecord.setDate(gapDate); 
+                	        absentRecord.setStatus("Absent"); 
+                	      
+                	        absentRecords.add(absentRecord);
+                	    } 
+                	    
+                	    timesheetRepo.saveAll(absentRecords); 
+                	}
              }
          }
 
@@ -152,6 +152,7 @@ public class TimesheetServiceImpl implements TimesheetService{
                  } else if (checkout.isBefore(deadline3PM)) {
                      existingRecord.setStatus("Half Day");
                  } 
+                 // --------------------------
              }
              
              if (timesheet.getNightTimeOut() != null) {
@@ -188,7 +189,6 @@ public class TimesheetServiceImpl implements TimesheetService{
              timesheetRepo.save(timesheet);
          }
      }
-
      
 		@Override
 		public List<Timesheet> findAll() {

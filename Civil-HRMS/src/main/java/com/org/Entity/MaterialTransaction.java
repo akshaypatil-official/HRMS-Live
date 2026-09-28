@@ -49,6 +49,9 @@ public class MaterialTransaction {
 	@Column(length = 500)
 	private String remarks;
 
+	@Column(name = "material_photo", length = 1000)
+    private String materialPhoto;
+	
 	@ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties({"transactions", "roles", "password"}) // Safely ignores circular dependencies
@@ -75,6 +78,7 @@ public class MaterialTransaction {
 		this.quantity = quantity;
 		this.remarks = remarks;
 		this.user = user;
+		
 
 	}
 
@@ -164,6 +168,14 @@ public class MaterialTransaction {
 
 	public void setCompany(Company company) {
 		this.company = company;
+	}
+
+	public String getMaterialPhoto() {
+		return materialPhoto;
+	}
+
+	public void setMaterialPhoto(String materialPhoto) {
+		this.materialPhoto = materialPhoto;
 	}
 
 
